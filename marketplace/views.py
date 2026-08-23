@@ -8,12 +8,12 @@ from .cluster_engine import form_cluster
 from .sample_artisans import SAMPLE_ARTISANS
 from .models import Artisan
 
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
-MODEL = "claude-sonnet-4-6"
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+MODEL = "gemini-3.6-flash"
 
 
 def health(request):
-    return JsonResponse({"status": "ok", "keyConfigured": bool(ANTHROPIC_API_KEY)})
+    return JsonResponse({"status": "ok", "keyConfigured": bool(GEMINI_API_KEY)})
 
 
 def sample_artisans(request):
@@ -89,24 +89,18 @@ Respond ONLY with valid JSON (no markdown fences, no preamble), in exactly this 
 
     try:
         response = requests.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "Content-Type": "application/json",
-                "x-api-key": ANTHROPIC_API_KEY,
-                "anthropic-version": "2023-06-01",
-            },
+            f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent",
+            headers={"Content-Type": "application/json"},
+            params={"key": GEMINI_API_KEY},
             json={
-                "model": MODEL,
-                "max_tokens": 1000,
-                "messages": [
+                "contents": [
                     {
-                        "role": "user",
-                        "content": [
-                            {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": image_base64}},
-                            {"type": "text", "text": prompt},
-                        ],
+                        "parts": [
+                            {"inline_data": {"mime_type": media_type, "data": image_base64}},
+                            {"text": prompt},
+                        ]
                     }
-                ],
+                ]
             },
         )
 
@@ -114,12 +108,13 @@ Respond ONLY with valid JSON (no markdown fences, no preamble), in exactly this 
             return JsonResponse({"error": "AI service error", "details": response.text}, status=502)
 
         data = response.json()
-        text_block = next((b for b in data.get("content", []) if b["type"] == "text"), None)
+        candidates = data.get("candidates", [])
 
-        if not text_block:
-            return JsonResponse({"error": "No text response from model"}, status=502)
+        if not candidates:
+            return JsonResponse({"error": "No response from model"}, status=502)
 
-        cleaned = text_block["text"].replace("```json", "").replace("```", "").strip()
+        text = candidates[0]["content"]["parts"][0]["text"]
+        cleaned = text.replace("```json", "").replace("```", "").strip()
         parsed = json.loads(cleaned)
         return JsonResponse(parsed)
 
