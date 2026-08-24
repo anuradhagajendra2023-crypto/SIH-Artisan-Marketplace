@@ -1,5 +1,10 @@
 import { useState } from "react";
+import { Routes, Route, Link, Navigate } from "react-router-dom";
 import "./App.css";
+import { useAuth } from "./context/AuthContext.jsx";
+import Login from "./pages/Login.jsx";
+import Register from "./pages/Register.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
@@ -228,7 +233,30 @@ function CatalogForm() {
   );
 }
 
-function App() {
+function TopBar() {
+  const { user, logout } = useAuth();
+  return (
+    <nav className="topbar">
+      {user ? (
+        <>
+          <span className="topbar-user">
+            {user.username} · {user.role}
+          </span>
+          <button className="btn-link" onClick={logout}>
+            Logout
+          </button>
+        </>
+      ) : (
+        <>
+          <Link to="/login">Login</Link>
+          <Link to="/register">Register</Link>
+        </>
+      )}
+    </nav>
+  );
+}
+
+function Home() {
   return (
     <div className="app">
       <header>
@@ -247,6 +275,28 @@ function App() {
         <p>Every order, woven from many hands.</p>
       </footer>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <>
+      <TopBar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute role="artisan">
+              <div className="app"><p>Artisan dashboard coming soon.</p></div>
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
 
