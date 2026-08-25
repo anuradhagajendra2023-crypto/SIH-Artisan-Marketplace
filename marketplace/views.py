@@ -1,33 +1,216 @@
 import json
 import requests
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 import os
 
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import authenticate, login as django_login, logout
+from django.contrib.auth import get_user_model
+User = get_user_model()
 from .cluster_engine import form_cluster
 from .sample_artisans import SAMPLE_ARTISANS
 from .models import Artisan
+
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 MODEL = "gemini-3.6-flash"
 
 
-def health(request):
-    return JsonResponse({"status": "ok", "keyConfigured": bool(GEMINI_API_KEY)})
+# ============================================================
+# HEALTH
+# ============================================================
 
+def health(request):
+    return JsonResponse({
+        "status": "ok",
+        "keyConfigured": bool(GEMINI_API_KEY),
+    })
+
+
+# ============================================================
+# SAMPLE ARTISANS
+# ============================================================
 
 def sample_artisans(request):
     return JsonResponse(SAMPLE_ARTISANS, safe=False)
 
 
+# ============================================================
+# AUTH - REGISTER
+# ============================================================
+
+@csrf_exempt
+def register(request):
+    if request.method != "POST":
+        return JsonResponse(
+            {"error": "POST required"},
+            status=405
+        )
+
+    try:
+        body = json.loads(request.body)
+
+        username = body.get("username", "").strip()
+        email = body.get("email", "").strip()
+        password = body.get("password", "")
+        role = body.get("role", "artisan")
+        phone = body.get("phone", "").strip()
+
+        # Required fields
+        if not username or not password:
+            return JsonResponse(
+                {"error": "Username and password are required."},
+                status=400
+            )
+
+        # Username already exists
+        if User.objects.filter(username=username).exists():
+            return JsonResponse(
+                {"error": "Username already exists."},
+                status=400
+            )
+
+        # Create Django user
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+        )
+
+        # Store extra information if available
+        # without depending on a custom User model.
+        user.first_name = role
+        user.last_name = phone
+        user.save()
+
+        return JsonResponse({
+            "message": "Registration successful.",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "role": role,
+                "phone": phone,
+            }
+        }, status=201)
+
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"error": "Invalid JSON."},
+            status=400
+        )
+
+    except Exception as e:
+        return JsonResponse(
+            {
+                "error": "Registration failed.",
+                "details": str(e),
+            },
+            status=500
+        )
+
+
+# ============================================================
+# AUTH - LOGIN
+# ============================================================
+
+@csrf_exempt
+def login(request):
+    if request.method != "POST":
+        return JsonResponse(
+            {"error": "POST required"},
+            status=405
+        )
+
+    try:
+        body = json.loads(request.body)
+
+        username = body.get("username", "").strip()
+        password = body.get("password", "")
+
+        if not username or not password:
+            return JsonResponse(
+                {"error": "Username and password are required."},
+                status=400
+            )
+
+        user = authenticate(
+            request,
+            username=username,
+            password=password,
+        )
+
+        if user is None:
+            return JsonResponse(
+                {"error": "Invalid username or password."},
+                status=401
+            )
+
+        # Create Django session
+        django_login(request, user)
+
+        return JsonResponse({
+            "message": "Login successful.",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "role": user.first_name or "artisan",
+                "phone": user.last_name or "",
+            }
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"error": "Invalid JSON."},
+            status=400
+        )
+
+    except Exception as e:
+        return JsonResponse(
+            {
+                "error": "Login failed.",
+                "details": str(e),
+            },
+            status=500
+        )
+
+
+# ============================================================
+# AUTH - LOGOUT
+# ============================================================
+
+@csrf_exempt
+def logout_view(request):
+    logout(request)
+
+    return JsonResponse({
+        "message": "Logged out successfully."
+    })
+
+
+# ============================================================
+# ARTISAN DATABASE
+# ============================================================
+
 def db_artisans_to_dicts():
-    """Convert Artisan DB rows into the same dict shape the cluster engine expects."""
+    """Convert Artisan DB rows into the same dict shape
+    the cluster engine expects.
+    """
+
     artisans = Artisan.objects.all()
+
     result = []
+
     for a in artisans:
         location = None
+
         if a.latitude is not None and a.longitude is not None:
-            location = {"lat": a.latitude, "lng": a.longitude}
+            location = {
+                "lat": a.latitude,
+                "lng": a.longitude,
+            }
+
         result.append({
             "id": str(a.id),
             "name": a.name,
@@ -36,45 +219,101 @@ def db_artisans_to_dicts():
             "capacityPerWeek": a.capacity_per_week,
             "rating": a.rating,
         })
+
     return result
 
+
+# ============================================================
+# CLUSTER
+# ============================================================
 
 @csrf_exempt
 def cluster(request):
     if request.method != "POST":
-        return JsonResponse({"error": "POST required"}, status=405)
+        return JsonResponse(
+            {"error": "POST required"},
+            status=405
+        )
 
-    body = json.loads(request.body)
-    order = body.get("order")
-    artisans = body.get("artisans")
+    try:
+        body = json.loads(request.body)
 
-    if not order or not order.get("productType") or not order.get("quantityNeeded"):
-        return JsonResponse({"error": "order.productType and order.quantityNeeded are required."}, status=400)
+        order = body.get("order")
+        artisans = body.get("artisans")
 
-    if artisans:
-        pool = artisans
-    else:
-        pool = db_artisans_to_dicts()
-        if not pool:
-            pool = SAMPLE_ARTISANS
+        if (
+            not order
+            or not order.get("productType")
+            or not order.get("quantityNeeded")
+        ):
+            return JsonResponse(
+                {
+                    "error": (
+                        "order.productType and "
+                        "order.quantityNeeded are required."
+                    )
+                },
+                status=400
+            )
 
-    result = form_cluster(order, pool)
-    return JsonResponse(result)
+        if artisans:
+            pool = artisans
+        else:
+            pool = db_artisans_to_dicts()
 
+            if not pool:
+                pool = SAMPLE_ARTISANS
+
+        result = form_cluster(order, pool)
+
+        return JsonResponse(result)
+
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"error": "Invalid JSON."},
+            status=400
+        )
+
+    except Exception as e:
+        return JsonResponse(
+            {
+                "error": "Cluster processing failed.",
+                "details": str(e),
+            },
+            status=500
+        )
+
+
+# ============================================================
+# CATALOG / AI IMAGE ANALYSIS
+# ============================================================
 
 @csrf_exempt
 def catalog(request):
     if request.method != "POST":
-        return JsonResponse({"error": "POST required"}, status=405)
+        return JsonResponse(
+            {"error": "POST required"},
+            status=405
+        )
 
-    body = json.loads(request.body)
-    image_base64 = body.get("imageBase64")
-    media_type = body.get("mediaType")
+    try:
+        body = json.loads(request.body)
 
-    if not image_base64 or not media_type:
-        return JsonResponse({"error": "imageBase64 and mediaType are required."}, status=400)
+        image_base64 = body.get("imageBase64")
+        media_type = body.get("mediaType")
 
-    prompt = """You are an assistant embedded in a mobile app for marginalized Indian artisans. An artisan has photographed a handmade product. Analyze the image and produce a market-ready catalog listing.
+        if not image_base64 or not media_type:
+            return JsonResponse(
+                {
+                    "error": (
+                        "imageBase64 and mediaType "
+                        "are required."
+                    )
+                },
+                status=400
+            )
+
+        prompt = """You are an assistant embedded in a mobile app for marginalized Indian artisans. An artisan has photographed a handmade product. Analyze the image and produce a market-ready catalog listing.
 
 Respond ONLY with valid JSON (no markdown fences, no preamble), in exactly this shape:
 {
@@ -87,17 +326,27 @@ Respond ONLY with valid JSON (no markdown fences, no preamble), in exactly this 
   "craft_technique_guess": "best guess at the traditional technique or art form visible, or 'Not clearly identifiable' if unsure"
 }"""
 
-    try:
         response = requests.post(
             f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent",
-            headers={"Content-Type": "application/json"},
-            params={"key": GEMINI_API_KEY},
+            headers={
+                "Content-Type": "application/json"
+            },
+            params={
+                "key": GEMINI_API_KEY
+            },
             json={
                 "contents": [
                     {
                         "parts": [
-                            {"inline_data": {"mime_type": media_type, "data": image_base64}},
-                            {"text": prompt},
+                            {
+                                "inline_data": {
+                                    "mime_type": media_type,
+                                    "data": image_base64,
+                                }
+                            },
+                            {
+                                "text": prompt
+                            },
                         ]
                     }
                 ]
@@ -105,18 +354,179 @@ Respond ONLY with valid JSON (no markdown fences, no preamble), in exactly this 
         )
 
         if response.status_code != 200:
-            return JsonResponse({"error": "AI service error", "details": response.text}, status=502)
+            return JsonResponse(
+                {
+                    "error": "AI service error",
+                    "details": response.text,
+                },
+                status=502
+            )
 
         data = response.json()
+
         candidates = data.get("candidates", [])
 
         if not candidates:
-            return JsonResponse({"error": "No response from model"}, status=502)
+            return JsonResponse(
+                {
+                    "error": "No response from model"
+                },
+                status=502
+            )
 
         text = candidates[0]["content"]["parts"][0]["text"]
-        cleaned = text.replace("```json", "").replace("```", "").strip()
+
+        cleaned = (
+            text
+            .replace("```json", "")
+            .replace("```", "")
+            .strip()
+        )
+
         parsed = json.loads(cleaned)
+
         return JsonResponse(parsed)
 
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {
+                "error": "Invalid JSON response from AI."
+            },
+            status=502
+        )
+
     except Exception as e:
-        return JsonResponse({"error": "Internal server error", "details": str(e)}, status=500)
+        return JsonResponse(
+            {
+                "error": "Internal server error",
+                "details": str(e),
+            },
+            status=500
+        )
+
+
+# ============================================================
+# VOICE CATALOGING / AI AUDIO ANALYSIS
+# ============================================================
+
+@csrf_exempt
+def voice_catalog(request):
+    if request.method != "POST":
+        return JsonResponse(
+            {"error": "POST required"},
+            status=405
+        )
+
+    try:
+        body = json.loads(request.body)
+
+        audio_base64 = body.get("audioBase64")
+        media_type = body.get("mediaType")
+
+        if not audio_base64 or not media_type:
+            return JsonResponse(
+                {
+                    "error": (
+                        "audioBase64 and mediaType "
+                        "are required."
+                    )
+                },
+                status=400
+            )
+
+        prompt = """You are an assistant embedded in a mobile app for marginalized Indian artisans. An artisan has recorded a spoken description of a handmade product, in Hindi, English, or a mix of both. First transcribe exactly what was said. Then produce a market-ready bilingual catalog listing based on it.
+
+Respond ONLY with valid JSON (no markdown fences, no preamble), in exactly this shape:
+{
+  "transcript": "exact transcription of the spoken audio, in the language(s) spoken",
+  "english": {
+    "title": "short catchy product title in English, under 8 words",
+    "description": "2-3 sentence buyer-facing description in English",
+    "tags": ["4-6 short English search tags"]
+  },
+  "hindi": {
+    "title": "same product title translated into Hindi (Devanagari script)",
+    "description": "same description translated into Hindi (Devanagari script)",
+    "tags": ["4-6 short Hindi search tags (Devanagari script)"]
+  }
+}
+
+If the transcript has very little product information, still produce a reasonable generic handmade-craft listing in both languages rather than leaving fields empty."""
+
+        response = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent",
+            headers={
+                "Content-Type": "application/json"
+            },
+            params={
+                "key": GEMINI_API_KEY
+            },
+            json={
+                "contents": [
+                    {
+                        "parts": [
+                            {
+                                "inline_data": {
+                                    "mime_type": media_type,
+                                    "data": audio_base64,
+                                }
+                            },
+                            {
+                                "text": prompt
+                            },
+                        ]
+                    }
+                ]
+            },
+        )
+
+        if response.status_code != 200:
+            return JsonResponse(
+                {
+                    "error": "AI service error",
+                    "details": response.text,
+                },
+                status=502
+            )
+
+        data = response.json()
+
+        candidates = data.get("candidates", [])
+
+        if not candidates:
+            return JsonResponse(
+                {
+                    "error": "No response from model"
+                },
+                status=502
+            )
+
+        text = candidates[0]["content"]["parts"][0]["text"]
+
+        cleaned = (
+            text
+            .replace("```json", "")
+            .replace("```", "")
+            .strip()
+        )
+
+        parsed = json.loads(cleaned)
+
+        return JsonResponse(parsed)
+
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {
+                "error": "Invalid JSON response from AI."
+            },
+            status=502
+        )
+
+    except Exception as e:
+        return JsonResponse(
+            {
+                "error": "Internal server error",
+                "details": str(e),
+            },
+            status=500
+        )

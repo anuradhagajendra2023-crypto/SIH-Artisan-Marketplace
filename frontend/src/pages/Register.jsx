@@ -10,13 +10,26 @@ export default function Register() {
 
   const update = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
+  const extractError = (err) => {
+    const data = err?.response?.data;
+    if (!data) return err?.message || 'Registration failed — check your details';
+    if (typeof data === 'string') return data;
+    if (data.detail) return data.detail;
+    // DRF validation errors come back as { field: ["msg1", "msg2"] }
+    return Object.entries(data)
+      .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+      .join(' | ');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       await register(form);
       navigate('/');
-    } catch {
-      setError('Registration failed — check your details');
+    } catch (err) {
+      console.error('Registration error:', err?.response?.status, err?.response?.data);
+      setError(extractError(err));
     }
   };
 
