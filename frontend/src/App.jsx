@@ -6,10 +6,24 @@ import { useAuth } from "./context/AuthContext.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
-import VoicePanel from "./components/VoicePanel.jsx";
+import ArtisanDashboard from "./pages/ArtisanDashboard.jsx";
+import BuyerDashboard from "./pages/BuyerDashboard.jsx";
+
+function Home() {
+  const { user } = useAuth();
+
+  if (user?.role === "artisan") return <ArtisanDashboard />;
+  if (user?.role === "buyer") return <BuyerDashboard />;
+
+  return <p>Unknown role.</p>;
+}
 
 function App() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <Routes>
@@ -24,22 +38,12 @@ function App() {
         element={user ? <Navigate to="/" replace /> : <Register />}
       />
 
-      {/* Protected home */}
+      {/* Protected home — role-based */}
       <Route
         path="/"
         element={
           <ProtectedRoute>
-            <VoicePanel />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Protected voice listing */}
-      <Route
-        path="/voice"
-        element={
-          <ProtectedRoute>
-            <VoicePanel />
+            <Home />
           </ProtectedRoute>
         }
       />

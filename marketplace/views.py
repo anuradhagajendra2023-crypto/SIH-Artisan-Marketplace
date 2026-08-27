@@ -10,7 +10,12 @@ User = get_user_model()
 from .cluster_engine import form_cluster
 from .sample_artisans import SAMPLE_ARTISANS
 from .models import Artisan
-
+from django.db.models import Q
+from .models import Product, Order
+from .serializers import ProductSerializer, OrderSerializer, OrderStatusSerializer
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 MODEL = "gemini-3.6-flash"
@@ -530,3 +535,73 @@ If the transcript has very little product information, still produce a reasonabl
             },
             status=500
         )
+    # ============================================================
+# PRODUCTS
+# ============================================================
+
+@api_view(["GET", "POST"])
+@permission_classes([AllowAny])
+def products(request):
+    if request.method == "GET":
+        qs = Product.objects.filter(status=Product.Status.PUBLISHED)
+        search = request.GET.get("search", "").strip()
+        if search:
+            qs = qs.filter(
+                Q(title__icontains=search)
+                | Q(description__icontains=search)
+                | Q(category__icontains=search)
+                | Q(craft_technique__icontains=search)
+            )
+        return Response(ProductSerializer(qs, many=True).data)
+
+    if not request.user.is_authenticated:
+        return Response({"error": "Authentication required."}, status=401)
+
+    serializer = ProductSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(artisan=request.user)
+        return Response(serializer.data, status=201)
+    return Response(serializer.errors, status=400)
+
+
+# ============================================================
+# ORDERS
+# ============================================================
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def orders(request):
+    if request.method == "GET":
+        qs = Order.objects.filter(product__artisan=request.user)
+        return Response(OrderSerializer(qs, many=True).data)
+
+    serializer = OrderSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(buyer=request.user)
+        return Response(serializer.data, status=201)
+    return Response(serializer.errors, status=400)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_orders(request):
+    qs = Order.objects.filter(buyer=request.user)
+    return Response(OrderSerializer(qs, many=True).data)
+
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def order_status(request, order_id):
+    try:
+        order = Order.objects.get(id=order_id)
+    except Order.DoesNotExist:
+        return Response({"error": "Order not found."}, status=404)
+
+    if request.user != order.buyer and request.user != order.product.artisan:
+        return Response({"error": "Not allowed."}, status=403)
+
+    serializer = OrderStatusSerializer(order, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(OrderSerializer(order).data)
+    return Response(serializer.errors, status=400)
