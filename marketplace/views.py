@@ -605,3 +605,12 @@ def order_status(request, order_id):
         serializer.save()
         return Response(OrderSerializer(order).data)
     return Response(serializer.errors, status=400)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def product_detail(request, product_id):
+    try:
+        product = Product.objects.get(id=product_id, status=Product.Status.PUBLISHED)
+    except Product.DoesNotExist:
+        return Response({"error": "Product not found."}, status=404)
+
+    return Response(ProductSerializer(product).data)

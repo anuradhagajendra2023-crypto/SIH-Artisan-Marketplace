@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import "../components/VoicePanel.css";
@@ -54,6 +55,12 @@ const BuyerDashboard = () => {
   const [placingOrderFor, setPlacingOrderFor] = useState(null);
   const [placedProductIds, setPlacedProductIds] = useState([]);
 
+  // ---------- PRODUCT DETAIL MODAL ----------
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState(null);
+  const [modalLang, setModalLang] = useState("en");
+
   const loadProducts = async (query = "") => {
     setProductsLoading(true);
     setProductsError(null);
@@ -97,6 +104,24 @@ const BuyerDashboard = () => {
       setPlacingOrderFor(null);
     }
   };
+
+  const openProductDetail = async (product) => {
+    setSelectedProduct(product); // instantly show what we already have
+    setModalLang("en");
+    setDetailError(null);
+    setDetailLoading(true);
+    try {
+      const { data } = await client.get(`/products/${product.id}/`);
+      setSelectedProduct(data);
+    } catch (err) {
+      console.error("Product detail load error:", err?.response?.data || err.message);
+      setDetailError("Could not refresh full details.");
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const closeProductDetail = () => setSelectedProduct(null);
 
   // ---------- MY ORDERS ----------
   const [myOrders, setMyOrders] = useState([]);
@@ -353,11 +378,13 @@ const BuyerDashboard = () => {
               {products.map((p) => (
                 <div
                   key={p.id}
+                  onClick={() => openProductDetail(p)}
                   style={{
                     padding: 14,
                     borderRadius: 14,
                     background: "#faf7f3",
                     border: "1px solid #e9e0d6",
+                    cursor: "pointer",
                   }}
                 >
                   {p.image_data_url && (
@@ -386,16 +413,21 @@ const BuyerDashboard = () => {
                         type="number"
                         min="1"
                         value={orderQuantities[p.id] || 1}
-                        onChange={(e) =>
-                          setOrderQuantities((prev) => ({ ...prev, [p.id]: e.target.value }))
-                        }
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setOrderQuantities((prev) => ({ ...prev, [p.id]: e.target.value }));
+                        }}
                         style={{ width: 56, padding: "8px 10px", borderRadius: 8, border: "1px solid #e3d7cb" }}
                       />
                       <button
                         type="button"
                         className="create-listing-button"
                         style={{ flex: 1, padding: "8px 12px", fontSize: 12 }}
-                        onClick={() => handlePlaceOrder(p)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePlaceOrder(p);
+                        }}
                         disabled={placingOrderFor === p.id}
                       >
                         {placingOrderFor === p.id ? "Placing..." : "Place order"}
@@ -486,6 +518,168 @@ const BuyerDashboard = () => {
         </div>
 
         <div className="voice-footer">Kaarigar · Built for SIH26090</div>
+
+        {selectedProduct && createPortal(
+          <div
+            onClick={closeProductDetail}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(44,40,36,0.55)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+              padding: 20,
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: "#fff",
+                borderRadius: 18,
+                maxWidth: 520,
+                width: "100%",
+                maxHeight: "90vh",
+                overflowY: "auto",
+                padding: 24,
+                position: "relative",
+                textAlign: "left",
+              }}
+            >
+              <button
+                type="button"
+                onClick={closeProductDetail}
+                style={{
+                  position: "absolute",
+                  top: 14,
+                  right: 14,
+                  background: "none",
+                  border: "none",
+                  fontSize: 22,
+                  cursor: "pointer",
+                  color: "#8b8279",
+                }}
+              >
+                ×
+              </button>
+
+              {selectedProduct.image_data_url && (
+                <img
+                  src={selectedProduct.image_data_url}
+                  alt={selectedProduct.title}
+                  style={{ width: "100%", maxHeight: 320, objectFit: "cover", borderRadius: 14, marginBottom: 16 }}
+                />
+              )}
+
+              <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                <button
+                  type="button"
+                  onClick={() => setModalLang("en")}
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: 999,
+                    border: "1px solid #e3d7cb",
+                    fontWeight: modalLang === "en" ? 800 : 500,
+                    background: modalLang === "en" ? "#2c2824" : "#fff",
+                    color: modalLang === "en" ? "#fff" : "#2c2824",
+                    cursor: "pointer",
+                  }}
+                >
+                  English
+                </button>
+                {selectedProduct.title_hi && (
+                  <button
+                    type="button"
+                    onClick={() => setModalLang("hi")}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: 999,
+                      border: "1px solid #e3d7cb",
+                      fontWeight: modalLang === "hi" ? 800 : 500,
+                      background: modalLang === "hi" ? "#2c2824" : "#fff",
+                      color: modalLang === "hi" ? "#fff" : "#2c2824",
+                      cursor: "pointer",
+                    }}
+                  >
+                    हिंदी
+                  </button>
+                )}
+              </div>
+
+              <h2 style={{ margin: "0 0 10px", fontSize: 22, color: "#2c2824" }}>
+                {modalLang === "hi" && selectedProduct.title_hi ? selectedProduct.title_hi : selectedProduct.title}
+              </h2>
+
+              <p style={{ fontSize: 14, color: "#6f665f", lineHeight: 1.6, marginBottom: 14 }}>
+                {modalLang === "hi" && selectedProduct.description_hi
+                  ? selectedProduct.description_hi
+                  : selectedProduct.description}
+              </p>
+
+              {(modalLang === "hi" ? selectedProduct.tags_hi : selectedProduct.tags)?.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
+                  {(modalLang === "hi" ? selectedProduct.tags_hi : selectedProduct.tags).map((t, i) => (
+                    <span
+                      key={i}
+                      style={{ fontSize: 11, background: "#fbf3e7", color: "#a3702f", padding: "4px 10px", borderRadius: 999 }}
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {selectedProduct.craft_technique && (
+                <p style={{ fontSize: 12, color: "#8b8279", marginBottom: 8 }}>
+                  <strong>Technique:</strong> {selectedProduct.craft_technique}
+                </p>
+              )}
+
+              <p style={{ fontSize: 12, color: "#8b8279", marginBottom: 14 }}>
+                By <strong>{selectedProduct.artisan_username}</strong>
+              </p>
+
+              <strong style={{ display: "block", fontSize: 20, color: "#a3702f", marginBottom: 16 }}>
+                {selectedProduct.price_min_inr
+                  ? `₹${selectedProduct.price_min_inr}${
+                      selectedProduct.price_max_inr && selectedProduct.price_max_inr !== selectedProduct.price_min_inr
+                        ? ` - ₹${selectedProduct.price_max_inr}`
+                        : ""
+                    }`
+                  : "Price on request"}
+              </strong>
+
+              {detailError && <p style={{ fontSize: 12, color: "#8d3d36", marginBottom: 10 }}>{detailError}</p>}
+
+              {placedProductIds.includes(selectedProduct.id) ? (
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#3d6b3d" }}>✓ Order placed</span>
+              ) : (
+                <div style={{ display: "flex", gap: 10 }}>
+                  <input
+                    type="number"
+                    min="1"
+                    value={orderQuantities[selectedProduct.id] || 1}
+                    onChange={(e) =>
+                      setOrderQuantities((prev) => ({ ...prev, [selectedProduct.id]: e.target.value }))
+                    }
+                    style={{ width: 70, padding: "10px 12px", borderRadius: 10, border: "1px solid #e3d7cb" }}
+                  />
+                  <button
+                    type="button"
+                    className="create-listing-button"
+                    style={{ flex: 1, padding: "10px 14px" }}
+                    onClick={() => handlePlaceOrder(selectedProduct)}
+                    disabled={placingOrderFor === selectedProduct.id}
+                  >
+                    {placingOrderFor === selectedProduct.id ? "Placing..." : "Place order"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
       </div>
     </div>
   );
