@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import React, { useState, useEffect } from "react";
-=======
-import React, { useState } from "react";
->>>>>>> 0715cb07c602f43739b4f1b25796490a488b85d4
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import "../components/VoicePanel.css";
@@ -49,7 +45,6 @@ const BuyerDashboard = () => {
     }
   };
 
-<<<<<<< HEAD
   // ---------- MARKETPLACE BROWSING ----------
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
@@ -146,8 +141,6 @@ const BuyerDashboard = () => {
     }
   };
 
-=======
->>>>>>> 0715cb07c602f43739b4f1b25796490a488b85d4
   return (
     <div className="voice-panel-page">
       <div className="voice-panel-container">
@@ -316,7 +309,6 @@ const BuyerDashboard = () => {
               </div>
             )}
           </div>
-<<<<<<< HEAD
 
           {/* ============ MARKETPLACE BROWSING ============ */}
           <div className="workspace-card" style={{ marginTop: 20 }}>
@@ -491,8 +483,6 @@ const BuyerDashboard = () => {
               </div>
             ))}
           </div>
-=======
->>>>>>> 0715cb07c602f43739b4f1b25796490a488b85d4
         </div>
 
         <div className="voice-footer">Kaarigar · Built for SIH26090</div>
