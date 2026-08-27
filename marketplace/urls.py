@@ -1,6 +1,5 @@
 from django.urls import path
 from . import views
-
 urlpatterns = [
     path("health/", views.health),
     path("artisans/sample/", views.sample_artisans),
@@ -10,5 +9,6 @@ urlpatterns = [
     path("products/", views.products),
     path("orders/", views.orders),
     path("orders/mine/", views.my_orders),
+    path("orders/received/", views.orders),   # ← ye naya add karna hai
     path("orders/<int:order_id>/status/", views.order_status),
 ]
