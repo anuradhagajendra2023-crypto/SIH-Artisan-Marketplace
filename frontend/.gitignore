@@ -22,3 +22,21 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python / Django
+venv/
+env/
+__pycache__/
+*.pyc
+db.sqlite3
+*.sqlite3
+
+# Environment variables / secrets
+.env
+*.env
+
+# Media uploads (agar track nahi karne)
+media/
+
+# Staticfiles (agar collectstatic use karte ho)
+staticfiles/
