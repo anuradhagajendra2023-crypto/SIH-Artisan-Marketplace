@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { useState, useRef, useEffect } from "react";
+=======
+import React, { useState, useRef } from "react";
+>>>>>>> 0715cb07c602f43739b4f1b25796490a488b85d4
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import "../components/VoicePanel.css";
@@ -13,7 +17,10 @@ const ArtisanDashboard = () => {
   const [catalogResult, setCatalogResult] = useState(null);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogError, setCatalogError] = useState(null);
+<<<<<<< HEAD
   const [catalogSaveState, setCatalogSaveState] = useState("idle"); // idle | saving | saved | error
+=======
+>>>>>>> 0715cb07c602f43739b4f1b25796490a488b85d4
 
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
@@ -101,6 +108,7 @@ const ArtisanDashboard = () => {
     }
   };
 
+<<<<<<< HEAD
   const parsePriceRange = (rangeText) => {
     if (!rangeText) return { min: null, max: null };
     const numbers = rangeText.match(/\d[\d,]*/g);
@@ -135,6 +143,8 @@ const ArtisanDashboard = () => {
     }
   };
 
+=======
+>>>>>>> 0715cb07c602f43739b4f1b25796490a488b85d4
   // ---------- VOICE CATALOGING ----------
   const [isRecording, setIsRecording] = useState(false);
   const [audioDataUrl, setAudioDataUrl] = useState(null);
@@ -142,8 +152,11 @@ const ArtisanDashboard = () => {
   const [voiceResult, setVoiceResult] = useState(null);
   const [voiceLoading, setVoiceLoading] = useState(false);
   const [voiceError, setVoiceError] = useState(null);
+<<<<<<< HEAD
   const [voicePrice, setVoicePrice] = useState({ min: "", max: "" });
   const [voiceSaveState, setVoiceSaveState] = useState("idle"); // idle | saving | saved | error
+=======
+>>>>>>> 0715cb07c602f43739b4f1b25796490a488b85d4
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -229,6 +242,7 @@ const ArtisanDashboard = () => {
     }
   };
 
+<<<<<<< HEAD
   const handleSaveVoiceListing = async () => {
     if (!voiceResult) return;
     setVoiceSaveState("saving");
@@ -305,6 +319,8 @@ const ArtisanDashboard = () => {
     }
   };
 
+=======
+>>>>>>> 0715cb07c602f43739b4f1b25796490a488b85d4
   return (
     <div className="voice-panel-page">
       <div className="voice-panel-container">
@@ -479,6 +495,7 @@ const ArtisanDashboard = () => {
                     </div>
                   </>
                 )}
+<<<<<<< HEAD
 
                 <button
                   type="button"
@@ -494,6 +511,8 @@ const ArtisanDashboard = () => {
                   {catalogSaveState === "saved" && "✓ Published"}
                   {catalogSaveState === "error" && "Could not save — tap to retry"}
                 </button>
+=======
+>>>>>>> 0715cb07c602f43739b4f1b25796490a488b85d4
               </div>
             )}
           </div>
@@ -624,6 +643,7 @@ const ArtisanDashboard = () => {
                   </div>
                 )}
               </div>
+<<<<<<< HEAD
 
               <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
                 <div style={{ flex: 1 }}>
@@ -662,10 +682,13 @@ const ArtisanDashboard = () => {
                 {voiceSaveState === "saved" && "✓ Published"}
                 {voiceSaveState === "error" && "Could not save — tap to retry"}
               </button>
+=======
+>>>>>>> 0715cb07c602f43739b4f1b25796490a488b85d4
             </div>
           )}
         </div>
 
+<<<<<<< HEAD
         {/* ============ ORDERS RECEIVED ============ */}
         <div className="workspace-card" style={{ marginTop: 20 }}>
           <div className="card-top">
@@ -750,6 +773,8 @@ const ArtisanDashboard = () => {
           ))}
         </div>
 
+=======
+>>>>>>> 0715cb07c602f43739b4f1b25796490a488b85d4
         <div className="voice-footer">Kaarigar · Built for SIH26090</div>
       </div>
     </div>
