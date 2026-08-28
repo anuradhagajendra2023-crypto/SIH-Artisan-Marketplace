@@ -640,3 +640,53 @@ def gallery(request):
         serializer.save(artisan=request.user)
         return Response(serializer.data, status=201)
     return Response(serializer.errors, status=400)
+
+
+# ============================================================
+# TRANSLATION (AI-powered, any language)
+# ============================================================
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def translate(request):
+    """Takes a dict of {key: englishText} and a target language name,
+    returns {key: translatedText} using Gemini. Used to translate the
+    whole UI into whatever language the person picks, including
+    regional and tribal languages not covered by a fixed language list.
+    """
+    texts = request.data.get("texts")
+    target_language = request.data.get("targetLanguage")
+
+    if not texts or not target_language:
+        return Response({"error": "texts and targetLanguage are required."}, status=400)
+
+    if target_language.strip().lower() in ("english", "en"):
+        return Response(texts)
+
+    prompt = (
+        "Translate each value in this JSON object into "
+        f"{target_language}. Keep the same keys. Keep translations "
+        "short and natural for buttons/labels in a mobile app. "
+        "Respond ONLY with valid JSON, no markdown fences, no preamble, "
+        "same keys as input:\n\n" + json.dumps(texts)
+    )
+
+    try:
+        resp = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent",
+            headers={"Content-Type": "application/json"},
+            params={"key": GEMINI_API_KEY},
+            json={"contents": [{"parts": [{"text": prompt}]}]},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        raw = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+        raw = raw.strip()
+        if raw.startswith("```"):
+            raw = raw.strip("`")
+            if raw.lower().startswith("json"):
+                raw = raw[4:]
+        translated = json.loads(raw)
+        return Response(translated)
+    except Exception as e:
+        return Response({"error": f"Translation failed: {str(e)}"}, status=500)

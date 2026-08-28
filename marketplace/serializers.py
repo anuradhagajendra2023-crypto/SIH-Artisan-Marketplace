@@ -90,7 +90,7 @@ class OrderStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ["status"]
-        from .models import GalleryMedia
+        
 
 
 class GalleryMediaSerializer(serializers.ModelSerializer):

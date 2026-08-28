@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../components/Auth.css';
+import LanguageSwitcher from '../components/LanguageSwitcher';
+
 
 export default function Register() {
   const [form, setForm] = useState({ username: '', email: '', password: '', role: 'artisan', phone: '' });
@@ -42,6 +44,7 @@ export default function Register() {
 
   return (
     <div className="auth-page">
+      <div style={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}><LanguageSwitcher /></div>
       <div className="auth-brand-panel">
         <div className="auth-glow-1" />
         <div className="auth-glow-2" />

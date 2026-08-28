@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../components/Auth.css';
+import LanguageSwitcher from '../components/LanguageSwitcher';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -11,6 +13,7 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,6 +31,7 @@ export default function Login() {
 
   return (
     <div className="auth-page">
+      <div style={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}><LanguageSwitcher /></div>
       <div className="auth-brand-panel">
         <div className="auth-glow-1" />
         <div className="auth-glow-2" />
@@ -38,19 +42,16 @@ export default function Login() {
         </div>
 
         <div className="auth-brand-mid">
-          <h2>Bringing marginalized artisans to a global marketplace.</h2>
-          <p>
-            AI-drafted catalog listings, fair dynamic pricing, and bulk-order
-            clustering — built for craftspeople who deserve to be seen.
-          </p>
+          <h2>{t('brandHeadline')}</h2>
+          <p>{t('brandSub')}</p>
           <ul className="auth-brand-points">
-            <li><span className="dot">📷</span> Photo &amp; voice cataloging in seconds</li>
-            <li><span className="dot">₹</span> Fair, AI-assisted pricing suggestions</li>
-            <li><span className="dot">🤝</span> Cluster fulfillment for bulk buyers</li>
+            <li><span className="dot">📷</span> {t('brandPoint1')}</li>
+            <li><span className="dot">₹</span> {t('brandPoint2')}</li>
+            <li><span className="dot">🤝</span> {t('brandPoint3')}</li>
           </ul>
         </div>
 
-        <div className="auth-brand-foot">Kaarigar · Built for SIH26090</div>
+        <div className="auth-brand-foot">{t('brandFooter')}</div>
       </div>
 
       <div className="auth-form-panel">
@@ -60,16 +61,16 @@ export default function Login() {
             <span>Kaarigar</span>
           </div>
 
-          <h1>Welcome back</h1>
-          <p className="auth-sub">Sign in to continue to your dashboard.</p>
+          <h1>{t('loginWelcomeBack')}</h1>
+          <p className="auth-sub">{t('loginSubtitle')}</p>
 
           <form onSubmit={handleSubmit}>
             <div className="auth-field">
-              <label htmlFor="login-username">Username</label>
+              <label htmlFor="login-username">{t('loginUsernameLabel')}</label>
               <div className="auth-input-wrap">
                 <input
                   id="login-username"
-                  placeholder="Enter your username"
+                  placeholder={t('loginUsernamePlaceholder')}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
@@ -79,12 +80,12 @@ export default function Login() {
             </div>
 
             <div className="auth-field">
-              <label htmlFor="login-password">Password</label>
+              <label htmlFor="login-password">{t('loginPasswordLabel')}</label>
               <div className="auth-input-wrap">
                 <input
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter your password"
+                  placeholder={t('loginPasswordPlaceholder')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -95,7 +96,7 @@ export default function Login() {
                   className="auth-toggle-visibility"
                   onClick={() => setShowPassword((s) => !s)}
                 >
-                  {showPassword ? 'Hide' : 'Show'}
+                  {showPassword ? t('loginHide') : t('loginShow')}
                 </button>
               </div>
             </div>
@@ -109,12 +110,12 @@ export default function Login() {
 
             <button type="submit" className="auth-submit-btn" disabled={submitting}>
               {submitting && <span className="auth-spinner" />}
-              {submitting ? 'Signing in...' : 'Sign In'}
+              {submitting ? t('loginSigningIn') : t('loginSignIn')}
             </button>
           </form>
 
           <p className="auth-switch">
-            New here? <Link to="/register">Create an account</Link>
+            {t('loginNewHere')} <Link to="/register">{t('loginCreateAccount')}</Link>
           </p>
         </div>
       </div>

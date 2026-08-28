@@ -4,6 +4,7 @@ import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import "../components/VoicePanel.css";
 import { Link } from "react-router-dom";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 const PRODUCT_TYPES = ["Terracotta Pots", "Handloom Sarees", "Wood Carvings"];
 
@@ -180,6 +181,7 @@ const BuyerDashboard = () => {
           </div>
           <div className="app-header-actions">
             <Link to="/gallery" style={{ marginRight: 12, fontWeight: 600 }}>Gallery</Link>
+            <LanguageSwitcher />
             <span className="user-badge">
               <span className="user-badge-avatar">{user?.username?.[0]}</span>
               {user?.username}
