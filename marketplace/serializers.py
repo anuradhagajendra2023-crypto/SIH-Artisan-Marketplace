@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from .models import Product, Order, GalleryMedia
 
 from .models import Product, Order
 
@@ -89,3 +90,22 @@ class OrderStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ["status"]
+        from .models import GalleryMedia
+
+
+class GalleryMediaSerializer(serializers.ModelSerializer):
+    artisan_username = serializers.CharField(source="artisan.username", read_only=True)
+
+    class Meta:
+        model = GalleryMedia
+        fields = [
+            "id",
+            "artisan",
+            "artisan_username",
+            "media_type",
+            "media_data_url",
+            "caption",
+            "craft_type",
+            "created_at",
+        ]
+        read_only_fields = ["id", "artisan", "artisan_username", "created_at"]

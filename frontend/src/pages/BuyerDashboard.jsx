@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import "../components/VoicePanel.css";
+import { Link } from "react-router-dom";
 
 const PRODUCT_TYPES = ["Terracotta Pots", "Handloom Sarees", "Wood Carvings"];
 
@@ -178,6 +179,7 @@ const BuyerDashboard = () => {
             </div>
           </div>
           <div className="app-header-actions">
+            <Link to="/gallery" style={{ marginRight: 12, fontWeight: 600 }}>Gallery</Link>
             <span className="user-badge">
               <span className="user-badge-avatar">{user?.username?.[0]}</span>
               {user?.username}

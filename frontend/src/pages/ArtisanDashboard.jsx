@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import "../components/VoicePanel.css";
+import { Link } from "react-router-dom";
 
 const ArtisanDashboard = () => {
   const { user, logout } = useAuth();
@@ -317,6 +318,7 @@ const ArtisanDashboard = () => {
             </div>
           </div>
           <div className="app-header-actions">
+            <Link to="/gallery" style={{ marginRight: 12, fontWeight: 600 }}>Gallery</Link>
             <span className="user-badge">
               <span className="user-badge-avatar">{user?.username?.[0]}</span>
               {user?.username}

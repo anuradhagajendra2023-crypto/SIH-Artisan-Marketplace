@@ -127,3 +127,36 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Order #{self.id} — {self.product.title} x{self.quantity}"
+
+
+class GalleryMedia(models.Model):
+    """A photo or video showing an artisan's craft-making process,
+    shown to buyers on the public Craft Gallery page.
+    """
+
+    class MediaType(models.TextChoices):
+        PHOTO = "photo", "Photo"
+        VIDEO = "video", "Video"
+
+    artisan = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="gallery_items",
+    )
+
+    media_type = models.CharField(max_length=10, choices=MediaType.choices, default=MediaType.PHOTO)
+
+    # Stored as a data URL, same approach as Product.image_data_url,
+    # so no extra media/storage configuration is required.
+    media_data_url = models.TextField()
+
+    caption = models.CharField(max_length=300, blank=True)
+    craft_type = models.CharField(max_length=200, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.media_type} by {self.artisan.username}"
