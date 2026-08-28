@@ -177,26 +177,12 @@ const BuyerDashboard = () => {
               <p>Bulk order fulfillment through artisan clusters, built for buyers.</p>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <span
-              style={{
-                fontSize: 14,
-                fontWeight: 700,
-                color: "#a3702f",
-                background: "#fbf3e7",
-                padding: "6px 14px",
-                borderRadius: 999,
-                letterSpacing: 0.2,
-              }}
-            >
+          <div className="app-header-actions">
+            <span className="user-badge">
+              <span className="user-badge-avatar">{user?.username?.[0]}</span>
               {user?.username}
             </span>
-            <button
-              type="button"
-              className="upload-button"
-              onClick={logout}
-              style={{ padding: "6px 14px" }}
-            >
+            <button type="button" className="upload-button logout-btn" onClick={logout}>
               Logout
             </button>
           </div>
@@ -213,15 +199,13 @@ const BuyerDashboard = () => {
             </div>
 
             <form onSubmit={handleFormCluster}>
-              <div style={{ marginBottom: 14 }}>
-                <label className="record-status" style={{ alignItems: "flex-start", marginTop: 0 }}>
-                  <strong style={{ marginBottom: 6 }}>Product type</strong>
-                </label>
+              <div className="field-block">
+                <label className="field-block-label" htmlFor="product-type">Product type</label>
                 <select
+                  id="product-type"
                   value={productType}
                   onChange={(e) => setProductType(e.target.value)}
-                  className="audio-player"
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid #e3d7cb", height: "auto" }}
+                  className="select-input"
                 >
                   <option value="" disabled>
                     Select product type
@@ -234,25 +218,27 @@ const BuyerDashboard = () => {
                 </select>
               </div>
 
-              <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
-                <div style={{ flex: 1 }}>
-                  <strong style={{ fontSize: 12, display: "block", marginBottom: 6 }}>Quantity needed</strong>
+              <div className="field-row-2">
+                <div className="field-block">
+                  <label className="field-block-label" htmlFor="qty-needed">Quantity needed</label>
                   <input
+                    id="qty-needed"
                     type="number"
                     min="1"
                     value={quantityNeeded}
                     onChange={(e) => setQuantityNeeded(e.target.value)}
-                    style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid #e3d7cb" }}
+                    className="text-input"
                   />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <strong style={{ fontSize: 12, display: "block", marginBottom: 6 }}>Unit price (₹)</strong>
+                <div className="field-block">
+                  <label className="field-block-label" htmlFor="unit-price">Unit price (₹)</label>
                   <input
+                    id="unit-price"
                     type="number"
                     min="0"
                     value={unitPriceInr}
                     onChange={(e) => setUnitPriceInr(e.target.value)}
-                    style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid #e3d7cb" }}
+                    className="text-input"
                   />
                 </div>
               </div>
@@ -275,13 +261,8 @@ const BuyerDashboard = () => {
 
             {clusterResult && (
               <div style={{ marginTop: 18 }}>
-                <div
-                  className="transcript-box"
-                  style={{
-                    background: clusterResult.success ? "#eef6ec" : "#fff5f4",
-                  }}
-                >
-                  <p style={{ color: clusterResult.success ? "#3d6b3d" : "#8d3d36" }}>
+                <div className={`transcript-box cluster-summary-box ${clusterResult.success ? "" : "failed"}`}>
+                  <p>
                     {clusterResult.success
                       ? `Fulfilled — ${clusterResult.clusterSize} artisans covering ${clusterResult.totalUnitsAllocated} units${
                           clusterResult.totalRevenueInr ? ` for ₹${clusterResult.totalRevenueInr.toLocaleString("en-IN")}` : ""
@@ -291,39 +272,11 @@ const BuyerDashboard = () => {
                 </div>
 
                 {clusterResult.allocation?.map((a) => (
-                  <div
-                    key={a.artisanId}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 14,
-                      padding: "14px 16px",
-                      marginTop: 10,
-                      borderRadius: 14,
-                      background: "#faf7f3",
-                      border: "1px solid #e9e0d6",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 44,
-                        height: 44,
-                        flex: "0 0 44px",
-                        borderRadius: "50%",
-                        border: "2px dashed #c98f6a",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 11,
-                        fontWeight: 800,
-                        color: "#9a5d3e",
-                      }}
-                    >
-                      {a.matchScore}%
-                    </div>
-                    <div>
-                      <strong style={{ display: "block", fontSize: 14, color: "#2c2824" }}>{a.name}</strong>
-                      <span style={{ fontSize: 12, color: "#8b8279" }}>
+                  <div key={a.artisanId} className="list-item">
+                    <div className="match-badge">{a.matchScore}%</div>
+                    <div className="list-item-info">
+                      <strong>{a.name}</strong>
+                      <span>
                         {a.unitsAllocated} units
                         {a.revenueShareInr != null ? ` · ₹${a.revenueShareInr.toLocaleString("en-IN")}` : ""}
                         {a.distanceKm != null ? ` · ${a.distanceKm} km` : ""}
@@ -345,13 +298,13 @@ const BuyerDashboard = () => {
               </div>
             </div>
 
-            <form onSubmit={handleSearch} style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+            <form onSubmit={handleSearch} className="search-row">
               <input
                 type="text"
                 placeholder="Search by name, material, category..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                style={{ flex: 1, padding: "10px 12px", borderRadius: 10, border: "1px solid #e3d7cb" }}
+                className="text-input"
               />
               <button type="submit" className="upload-button">
                 Search
@@ -371,44 +324,30 @@ const BuyerDashboard = () => {
             )}
 
             {!productsLoading && !productsError && products.length === 0 && (
-              <p style={{ color: "#8b8279" }}>No listings yet — check back soon.</p>
+              <p className="empty-state">No listings yet — check back soon.</p>
             )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
+            <div className="product-grid">
               {products.map((p) => (
-                <div
-                  key={p.id}
-                  onClick={() => openProductDetail(p)}
-                  style={{
-                    padding: 14,
-                    borderRadius: 14,
-                    background: "#faf7f3",
-                    border: "1px solid #e9e0d6",
-                    cursor: "pointer",
-                  }}
-                >
+                <div key={p.id} className="product-card" onClick={() => openProductDetail(p)}>
                   {p.image_data_url && (
-                    <img
-                      src={p.image_data_url}
-                      alt={p.title}
-                      style={{ width: "100%", height: 130, objectFit: "cover", borderRadius: 10, marginBottom: 10 }}
-                    />
+                    <img src={p.image_data_url} alt={p.title} className="product-card-img" />
                   )}
-                  <h4 style={{ margin: "0 0 6px", fontSize: 15 }}>{p.title}</h4>
-                  <p style={{ fontSize: 12, color: "#6f665f", lineHeight: 1.5, marginBottom: 8 }}>
+                  <h4>{p.title}</h4>
+                  <p className="product-card-desc">
                     {p.description?.slice(0, 90)}
                     {p.description?.length > 90 ? "..." : ""}
                   </p>
-                  <strong style={{ display: "block", color: "#a3702f", marginBottom: 10 }}>
+                  <strong className="product-card-price">
                     {p.price_min_inr
                       ? `₹${p.price_min_inr}${p.price_max_inr && p.price_max_inr !== p.price_min_inr ? ` - ₹${p.price_max_inr}` : ""}`
                       : "Price on request"}
                   </strong>
 
                   {placedProductIds.includes(p.id) ? (
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "#3d6b3d" }}>✓ Order placed</span>
+                    <span className="order-placed-tag">✓ Order placed</span>
                   ) : (
-                    <div style={{ display: "flex", gap: 8 }}>
+                    <div className="product-card-order">
                       <input
                         type="number"
                         min="1"
@@ -418,7 +357,7 @@ const BuyerDashboard = () => {
                           e.stopPropagation();
                           setOrderQuantities((prev) => ({ ...prev, [p.id]: e.target.value }));
                         }}
-                        style={{ width: 56, padding: "8px 10px", borderRadius: 8, border: "1px solid #e3d7cb" }}
+                        className="qty-input"
                       />
                       <button
                         type="button"
@@ -462,49 +401,24 @@ const BuyerDashboard = () => {
             )}
 
             {!myOrdersLoading && !myOrdersError && myOrders.length === 0 && (
-              <p style={{ color: "#8b8279" }}>You haven't placed any orders yet.</p>
+              <p className="empty-state">You haven't placed any orders yet.</p>
             )}
 
             {myOrders.map((o) => (
-              <div
-                key={o.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 14,
-                  padding: "14px 16px",
-                  marginTop: 10,
-                  borderRadius: 14,
-                  background: "#faf7f3",
-                  border: "1px solid #e9e0d6",
-                }}
-              >
+              <div key={o.id} className="list-item">
                 {o.product_image && (
-                  <img
-                    src={o.product_image}
-                    alt={o.product_title}
-                    style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 10, flexShrink: 0 }}
-                  />
+                  <img src={o.product_image} alt={o.product_title} className="list-item-thumb" />
                 )}
-                <div style={{ flex: 1 }}>
-                  <strong style={{ display: "block", fontSize: 14, color: "#2c2824" }}>
+                <div className="list-item-info">
+                  <strong>
                     {o.product_title} × {o.quantity}
                   </strong>
-                  <span style={{ fontSize: 12, color: "#8b8279" }}>
+                  <span>
                     by {o.artisan_username}
                     {o.total_price_inr ? ` · ₹${o.total_price_inr.toLocaleString("en-IN")}` : ""}
                   </span>
                 </div>
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    padding: "5px 12px",
-                    borderRadius: 999,
-                    background: o.status === "cancelled" ? "#fdecea" : "#fbf3e7",
-                    color: o.status === "cancelled" ? "#8d3d36" : "#a3702f",
-                  }}
-                >
+                <span className={`status-pill ${o.status === "cancelled" ? "cancelled" : ""}`}>
                   {STATUS_LABELS[o.status] || o.status}
                 </span>
                 {o.status === "placed" && (
@@ -520,127 +434,64 @@ const BuyerDashboard = () => {
         <div className="voice-footer">Kaarigar · Built for SIH26090</div>
 
         {selectedProduct && createPortal(
-          <div
-            onClick={closeProductDetail}
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(44,40,36,0.55)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 1000,
-              padding: 20,
-            }}
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                background: "#fff",
-                borderRadius: 18,
-                maxWidth: 520,
-                width: "100%",
-                maxHeight: "90vh",
-                overflowY: "auto",
-                padding: 24,
-                position: "relative",
-                textAlign: "left",
-              }}
-            >
-              <button
-                type="button"
-                onClick={closeProductDetail}
-                style={{
-                  position: "absolute",
-                  top: 14,
-                  right: 14,
-                  background: "none",
-                  border: "none",
-                  fontSize: 22,
-                  cursor: "pointer",
-                  color: "#8b8279",
-                }}
-              >
+          <div className="modal-overlay" onClick={closeProductDetail}>
+            <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+              <button type="button" className="modal-close" onClick={closeProductDetail}>
                 ×
               </button>
 
               {selectedProduct.image_data_url && (
-                <img
-                  src={selectedProduct.image_data_url}
-                  alt={selectedProduct.title}
-                  style={{ width: "100%", maxHeight: 320, objectFit: "cover", borderRadius: 14, marginBottom: 16 }}
-                />
+                <img src={selectedProduct.image_data_url} alt={selectedProduct.title} className="modal-image" />
               )}
 
-              <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+              <div className="lang-tabs">
                 <button
                   type="button"
+                  className={`lang-tab ${modalLang === "en" ? "active" : ""}`}
                   onClick={() => setModalLang("en")}
-                  style={{
-                    padding: "6px 14px",
-                    borderRadius: 999,
-                    border: "1px solid #e3d7cb",
-                    fontWeight: modalLang === "en" ? 800 : 500,
-                    background: modalLang === "en" ? "#2c2824" : "#fff",
-                    color: modalLang === "en" ? "#fff" : "#2c2824",
-                    cursor: "pointer",
-                  }}
                 >
                   English
                 </button>
                 {selectedProduct.title_hi && (
                   <button
                     type="button"
+                    className={`lang-tab ${modalLang === "hi" ? "active" : ""}`}
                     onClick={() => setModalLang("hi")}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: 999,
-                      border: "1px solid #e3d7cb",
-                      fontWeight: modalLang === "hi" ? 800 : 500,
-                      background: modalLang === "hi" ? "#2c2824" : "#fff",
-                      color: modalLang === "hi" ? "#fff" : "#2c2824",
-                      cursor: "pointer",
-                    }}
                   >
                     हिंदी
                   </button>
                 )}
               </div>
 
-              <h2 style={{ margin: "0 0 10px", fontSize: 22, color: "#2c2824" }}>
+              <h2 className="modal-title">
                 {modalLang === "hi" && selectedProduct.title_hi ? selectedProduct.title_hi : selectedProduct.title}
               </h2>
 
-              <p style={{ fontSize: 14, color: "#6f665f", lineHeight: 1.6, marginBottom: 14 }}>
+              <p className="modal-desc">
                 {modalLang === "hi" && selectedProduct.description_hi
                   ? selectedProduct.description_hi
                   : selectedProduct.description}
               </p>
 
               {(modalLang === "hi" ? selectedProduct.tags_hi : selectedProduct.tags)?.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
+                <div className="modal-tags">
                   {(modalLang === "hi" ? selectedProduct.tags_hi : selectedProduct.tags).map((t, i) => (
-                    <span
-                      key={i}
-                      style={{ fontSize: 11, background: "#fbf3e7", color: "#a3702f", padding: "4px 10px", borderRadius: 999 }}
-                    >
-                      {t}
-                    </span>
+                    <span key={i}>{t}</span>
                   ))}
                 </div>
               )}
 
               {selectedProduct.craft_technique && (
-                <p style={{ fontSize: 12, color: "#8b8279", marginBottom: 8 }}>
+                <p className="modal-meta">
                   <strong>Technique:</strong> {selectedProduct.craft_technique}
                 </p>
               )}
 
-              <p style={{ fontSize: 12, color: "#8b8279", marginBottom: 14 }}>
+              <p className="modal-meta">
                 By <strong>{selectedProduct.artisan_username}</strong>
               </p>
 
-              <strong style={{ display: "block", fontSize: 20, color: "#a3702f", marginBottom: 16 }}>
+              <strong className="modal-price">
                 {selectedProduct.price_min_inr
                   ? `₹${selectedProduct.price_min_inr}${
                       selectedProduct.price_max_inr && selectedProduct.price_max_inr !== selectedProduct.price_min_inr
@@ -653,9 +504,9 @@ const BuyerDashboard = () => {
               {detailError && <p style={{ fontSize: 12, color: "#8d3d36", marginBottom: 10 }}>{detailError}</p>}
 
               {placedProductIds.includes(selectedProduct.id) ? (
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#3d6b3d" }}>✓ Order placed</span>
+                <span className="order-placed-tag">✓ Order placed</span>
               ) : (
-                <div style={{ display: "flex", gap: 10 }}>
+                <div className="modal-order-row">
                   <input
                     type="number"
                     min="1"
@@ -663,12 +514,13 @@ const BuyerDashboard = () => {
                     onChange={(e) =>
                       setOrderQuantities((prev) => ({ ...prev, [selectedProduct.id]: e.target.value }))
                     }
-                    style={{ width: 70, padding: "10px 12px", borderRadius: 10, border: "1px solid #e3d7cb" }}
+                    className="qty-input"
+                    style={{ width: 70 }}
                   />
                   <button
                     type="button"
                     className="create-listing-button"
-                    style={{ flex: 1, padding: "10px 14px" }}
+                    style={{ padding: "10px 14px" }}
                     onClick={() => handlePlaceOrder(selectedProduct)}
                     disabled={placingOrderFor === selectedProduct.id}
                   >

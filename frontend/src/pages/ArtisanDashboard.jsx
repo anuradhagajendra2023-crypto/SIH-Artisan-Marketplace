@@ -316,26 +316,12 @@ const ArtisanDashboard = () => {
               <p>Cluster fulfillment and AI-drafted catalog listings, built for independent artisans.</p>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <span
-              style={{
-                fontSize: 14,
-                fontWeight: 700,
-                color: "#a3702f",
-                background: "#fbf3e7",
-                padding: "6px 14px",
-                borderRadius: 999,
-                letterSpacing: 0.2,
-              }}
-            >
+          <div className="app-header-actions">
+            <span className="user-badge">
+              <span className="user-badge-avatar">{user?.username?.[0]}</span>
               {user?.username}
             </span>
-            <button
-              type="button"
-              className="upload-button"
-              onClick={logout}
-              style={{ padding: "6px 14px" }}
-            >
+            <button type="button" className="upload-button logout-btn" onClick={logout}>
               Logout
             </button>
           </div>
@@ -460,15 +446,8 @@ const ArtisanDashboard = () => {
                     <p className="result-label" style={{ marginBottom: 8 }}>
                       DYNAMIC PRICING ASSISTANT
                     </p>
-                    <div
-                      style={{
-                        padding: "16px 18px",
-                        borderRadius: 14,
-                        background: "#fbf3e7",
-                        borderLeft: "4px solid #c98f4a",
-                      }}
-                    >
-                      <strong style={{ fontSize: 20, color: "#a3702f" }}>
+                    <div className="price-highlight">
+                      <strong>
                         {catalogResult.suggested_price_range_inr}
                       </strong>
                       {catalogResult.price_reasoning && (
@@ -689,49 +668,24 @@ const ArtisanDashboard = () => {
           )}
 
           {!ordersLoading && !ordersError && orders.length === 0 && (
-            <p style={{ color: "#8b8279" }}>No orders yet. Once a buyer orders one of your listings, it'll show up here.</p>
+            <p className="empty-state">No orders yet. Once a buyer orders one of your listings, it'll show up here.</p>
           )}
 
           {orders.map((o) => (
-            <div
-              key={o.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-                padding: "14px 16px",
-                marginTop: 10,
-                borderRadius: 14,
-                background: "#faf7f3",
-                border: "1px solid #e9e0d6",
-              }}
-            >
+            <div key={o.id} className="list-item">
               {o.product_image && (
-                <img
-                  src={o.product_image}
-                  alt={o.product_title}
-                  style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 10, flexShrink: 0 }}
-                />
+                <img src={o.product_image} alt={o.product_title} className="list-item-thumb" />
               )}
-              <div style={{ flex: 1 }}>
-                <strong style={{ display: "block", fontSize: 14, color: "#2c2824" }}>
+              <div className="list-item-info">
+                <strong>
                   {o.product_title} × {o.quantity}
                 </strong>
-                <span style={{ fontSize: 12, color: "#8b8279" }}>
+                <span>
                   {o.buyer_username}
                   {o.total_price_inr ? ` · ₹${o.total_price_inr.toLocaleString("en-IN")}` : ""}
                 </span>
               </div>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: "5px 12px",
-                  borderRadius: 999,
-                  background: o.status === "cancelled" ? "#fdecea" : "#fbf3e7",
-                  color: o.status === "cancelled" ? "#8d3d36" : "#a3702f",
-                }}
-              >
+              <span className={`status-pill ${o.status === "cancelled" ? "cancelled" : ""}`}>
                 {STATUS_LABELS[o.status] || o.status}
               </span>
               {STATUS_FLOW.indexOf(o.status) >= 0 && STATUS_FLOW.indexOf(o.status) < STATUS_FLOW.length - 1 && (
