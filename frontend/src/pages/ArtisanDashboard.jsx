@@ -16,6 +16,20 @@ const ArtisanDashboard = () => {
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogError, setCatalogError] = useState(null);
   const [catalogSaveState, setCatalogSaveState] = useState("idle"); // idle | saving | saved | error
+  const [marketPricing, setMarketPricing] = useState(null); // Dynamic Pricing Assistant result
+
+  // ---------- AI IMAGE STUDIO ----------
+  const [enhancePreset, setEnhancePreset] = useState("marketplace_standard");
+  const [enhancedPhotoUrl, setEnhancedPhotoUrl] = useState(null);
+  const [enhanceLoading, setEnhanceLoading] = useState(false);
+  const [enhanceError, setEnhanceError] = useState(null);
+  const [showEnhancedPreview, setShowEnhancedPreview] = useState(true); // true = after, false = before
+
+  const IMAGE_STUDIO_PRESETS = [
+    { id: "marketplace_standard", label: "Marketplace standard" },
+    { id: "clean_white", label: "Clean white background" },
+    { id: "warm_lifestyle", label: "Warm lifestyle shot" },
+  ];
 
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
@@ -27,6 +41,10 @@ const ArtisanDashboard = () => {
     setPhotoMediaType(null);
     setCatalogResult(null);
     setCatalogError(null);
+    setMarketPricing(null);
+    setEnhancedPhotoUrl(null);
+    setEnhanceError(null);
+    setShowEnhancedPreview(true);
   };
 
   const handleChoosePhoto = () => fileInputRef.current?.click();
@@ -80,6 +98,38 @@ const ArtisanDashboard = () => {
     stopCamera();
   };
 
+  // ---------- AI IMAGE STUDIO ----------
+  const handleRunEnhance = async (preset) => {
+    if (!photoDataUrl) return;
+    setEnhancePreset(preset);
+    setEnhanceLoading(true);
+    setEnhanceError(null);
+
+    try {
+      const base64 = photoDataUrl.split(",")[1];
+      const { data } = await client.post("/enhance/", {
+        imageBase64: base64,
+        preset,
+      });
+      setEnhancedPhotoUrl(data.imageDataUrl);
+      setShowEnhancedPreview(true);
+    } catch (err) {
+      console.error("Enhance error:", err?.response?.data || err.message);
+      setEnhanceError("Could not enhance this photo. Please try again.");
+    } finally {
+      setEnhanceLoading(false);
+    }
+  };
+
+  // Replaces the working photo with the enhanced version so it's what
+  // gets sent to the AI listing generator and saved with the product.
+  const handleUseEnhancedPhoto = () => {
+    if (!enhancedPhotoUrl) return;
+    setPhotoDataUrl(enhancedPhotoUrl);
+    setPhotoMediaType("image/png");
+    setEnhancedPhotoUrl(null);
+  };
+
   const handleGenerateListing = async () => {
     if (!photoDataUrl) return;
     setCatalogLoading(true);
@@ -93,6 +143,7 @@ const ArtisanDashboard = () => {
         mediaType: photoMediaType,
       });
       setCatalogResult(data);
+      fetchMarketPricing(data);
     } catch (err) {
       console.error("Catalog error:", err?.response?.data || err.message);
       setCatalogError(
@@ -100,6 +151,26 @@ const ArtisanDashboard = () => {
       );
     } finally {
       setCatalogLoading(false);
+    }
+  };
+
+  // Looks up the market-grounded price band (Dynamic Pricing Assistant)
+  // for whatever category/technique/tags the AI just detected. Silently
+  // no-ops if there isn't enough comparable data yet — the AI's own
+  // price_reasoning already covers that case in the UI below.
+  const fetchMarketPricing = async (result) => {
+    setMarketPricing(null);
+    try {
+      const { data } = await client.post("/pricing/", {
+        category: result.category || "",
+        craft_technique: result.craft_technique_guess || "",
+        tags: result.tags || [],
+      });
+      if (data?.has_market_data) {
+        setMarketPricing(data);
+      }
+    } catch (err) {
+      console.error("Pricing lookup error:", err?.response?.data || err.message);
     }
   };
 
@@ -388,7 +459,7 @@ const ArtisanDashboard = () => {
 
             {photoDataUrl && !cameraActive && (
               <div className="photo-preview">
-                <img src={photoDataUrl} alt="Product" />
+                <img src={showEnhancedPreview && enhancedPhotoUrl ? enhancedPhotoUrl : photoDataUrl} alt="Product" />
                 <div className="photo-preview-overlay">
                   <span>Ready</span>
                   <button type="button" onClick={resetPhotoState}>
@@ -399,6 +470,74 @@ const ArtisanDashboard = () => {
             )}
 
             <canvas ref={canvasRef} className="hidden-canvas" />
+
+            {photoDataUrl && !cameraActive && (
+              <div style={{ marginTop: 14 }}>
+                <p className="result-label" style={{ marginBottom: 8 }}>
+                  AI IMAGE STUDIO
+                </p>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {IMAGE_STUDIO_PRESETS.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => handleRunEnhance(p.id)}
+                      disabled={enhanceLoading}
+                      style={{
+                        padding: "6px 12px",
+                        fontSize: 12,
+                        borderRadius: 20,
+                        border: enhancePreset === p.id && enhancedPhotoUrl ? "1px solid #2f6f4f" : "1px solid #d8d0c4",
+                        background: enhancePreset === p.id && enhancedPhotoUrl ? "#e3f0e6" : "#fff",
+                        color: enhancePreset === p.id && enhancedPhotoUrl ? "#2f6f4f" : "#3a332b",
+                        cursor: enhanceLoading ? "wait" : "pointer",
+                      }}
+                    >
+                      {enhanceLoading && enhancePreset === p.id ? "Enhancing..." : p.label}
+                    </button>
+                  ))}
+                </div>
+
+                {enhanceError && (
+                  <p style={{ marginTop: 8, fontSize: 12, color: "#b3432b" }}>{enhanceError}</p>
+                )}
+
+                {enhancedPhotoUrl && (
+                  <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowEnhancedPreview((v) => !v)}
+                      style={{
+                        padding: "6px 12px",
+                        fontSize: 12,
+                        borderRadius: 20,
+                        border: "1px solid #d8d0c4",
+                        background: "#fff",
+                        color: "#3a332b",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {showEnhancedPreview ? "Show original" : "Show enhanced"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleUseEnhancedPhoto}
+                      style={{
+                        padding: "6px 12px",
+                        fontSize: 12,
+                        borderRadius: 20,
+                        border: "1px solid #2f6f4f",
+                        background: "#2f6f4f",
+                        color: "#fff",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Use this photo
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {photoDataUrl && !cameraActive && (
               <button
@@ -460,6 +599,22 @@ const ArtisanDashboard = () => {
                         </p>
                       )}
                     </div>
+
+                    {marketPricing && (
+                      <div className="price-highlight" style={{ marginTop: 10 }}>
+                        <p className="result-label" style={{ marginBottom: 8 }}>
+                          MARKET COMPARISON
+                        </p>
+                        <strong>
+                          ₹{marketPricing.suggested_min_inr.toLocaleString("en-IN")} - ₹
+                          {marketPricing.suggested_max_inr.toLocaleString("en-IN")}
+                        </strong>
+                        <p style={{ margin: "8px 0 0", fontSize: 12, color: "#6f665f" }}>
+                          Based on {marketPricing.comparable_count} similar item
+                          {marketPricing.comparable_count === 1 ? "" : "s"} already sold on Kaarigar.
+                        </p>
+                      </div>
+                    )}
                   </>
                 )}
 

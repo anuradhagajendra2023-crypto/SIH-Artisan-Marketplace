@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db.models import Sum
 
 from .models import Product, Order, GalleryMedia
 
@@ -6,6 +7,8 @@ from .models import Product, Order, GalleryMedia
 class ProductSerializer(serializers.ModelSerializer):
     artisan_username = serializers.CharField(source="artisan.username", read_only=True)
     artisan_phone = serializers.CharField(source="artisan.phone", read_only=True)
+    artisan_is_verified = serializers.BooleanField(source="artisan.is_verified", read_only=True)
+    units_sold = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -14,6 +17,8 @@ class ProductSerializer(serializers.ModelSerializer):
             "artisan",
             "artisan_username",
             "artisan_phone",
+            "artisan_is_verified",
+            "units_sold",
             "title",
             "description",
             "tags",
@@ -30,7 +35,24 @@ class ProductSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "artisan", "artisan_username", "artisan_phone", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "artisan",
+            "artisan_username",
+            "artisan_phone",
+            "artisan_is_verified",
+            "units_sold",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_units_sold(self, obj):
+        """Total quantity ordered for this listing across every order that
+        wasn't cancelled — shown to buyers as a simple trust signal."""
+        total = obj.orders.exclude(status=Order.Status.CANCELLED).aggregate(
+            total=Sum("quantity")
+        )["total"]
+        return total or 0
 
 
 class OrderSerializer(serializers.ModelSerializer):

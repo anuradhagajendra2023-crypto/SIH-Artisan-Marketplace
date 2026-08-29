@@ -71,22 +71,58 @@ def correct_lighting(img: Image.Image) -> Image.Image:
     return img
 
 
-def enhance(image_bytes: bytes) -> bytes:
-    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+# ============================================================
+# AI IMAGE STUDIO — multiple finish presets on top of the shared
+# lighting-correction + background-removal pipeline. "marketplace_standard"
+# reproduces the original single-preset behaviour exactly, so nothing
+# already using enhance() without a preset changes.
+# ============================================================
 
+PRESETS = {
+    "marketplace_standard": {
+        "label": "Marketplace standard",
+        "backdrop": (245, 240, 228),
+        "brightness": 1.0,
+        "saturation": 1.0,
+    },
+    "clean_white": {
+        "label": "Clean white background",
+        "backdrop": (255, 255, 255),
+        "brightness": 1.0,
+        "saturation": 0.97,
+    },
+    "warm_lifestyle": {
+        "label": "Warm lifestyle shot",
+        "backdrop": (214, 178, 140),
+        "brightness": 1.05,
+        "saturation": 1.18,
+    },
+}
+
+
+def enhance(image_bytes: bytes, preset: str = "marketplace_standard") -> bytes:
+    config = PRESETS.get(preset, PRESETS["marketplace_standard"])
+
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     img = correct_lighting(img)
+
+    if config["brightness"] != 1.0:
+        img = ImageEnhance.Brightness(img).enhance(config["brightness"])
+    if config["saturation"] != 1.0:
+        img = ImageEnhance.Color(img).enhance(config["saturation"])
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     cutout_bytes = remove(buf.getvalue(), session=get_session())
     cutout = Image.open(io.BytesIO(cutout_bytes)).convert("RGBA")
 
-    backdrop = Image.new("RGBA", cutout.size, (245, 240, 228, 255))
+    backdrop_rgb = config["backdrop"]
+    backdrop = Image.new("RGBA", cutout.size, backdrop_rgb + (255,))
     backdrop.alpha_composite(cutout)
     flat = backdrop.convert("RGB")
 
     side = max(flat.size)
-    square = Image.new("RGB", (side, side), (245, 240, 228))
+    square = Image.new("RGB", (side, side), backdrop_rgb)
     offset = ((side - flat.width) // 2, (side - flat.height) // 2)
     square.paste(flat, offset)
     square = square.resize((1024, 1024))

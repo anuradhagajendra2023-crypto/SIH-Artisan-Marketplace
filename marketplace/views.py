@@ -1,4 +1,5 @@
 import json
+import base64
 import requests
 import os
 
@@ -692,3 +693,90 @@ def translate(request):
         return Response(translated)
     except Exception as e:
         return Response({"error": f"Translation failed: {str(e)}"}, status=500)
+
+
+# ============================================================
+# DYNAMIC PRICING ASSISTANT (market-data based)
+# ============================================================
+
+from .pricing_engine import suggest_price
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def pricing(request):
+    """Standalone Dynamic Pricing Assistant.
+
+    Given a category / craft_technique / tags, returns a price band
+    grounded in comparable listings already published on Kaarigar,
+    plus how many comparables it used. This complements (doesn't
+    replace) the single AI guess already returned inline by
+    views.catalog — the frontend shows both side by side.
+
+    Returns {"has_market_data": False} when there isn't yet enough
+    comparable data (fewer than 2 similar published listings), so
+    the frontend can fall back to the AI-only price_reasoning.
+    """
+    category = (request.data.get("category") or "").strip()
+    craft_technique = (request.data.get("craft_technique") or "").strip()
+    tags = request.data.get("tags") or []
+
+    if not category and not craft_technique and not tags:
+        return Response(
+            {"error": "category, craft_technique, or tags is required."},
+            status=400,
+        )
+
+    result = suggest_price(category=category, craft_technique=craft_technique, tags=tags)
+
+    if result is None:
+        return Response({"has_market_data": False})
+
+    return Response({"has_market_data": True, **result})
+
+
+# ============================================================
+# AI IMAGE STUDIO — preset enhancement
+# ============================================================
+
+from .image_engine import enhance as run_image_enhance, PRESETS as IMAGE_PRESETS
+
+
+@csrf_exempt
+def enhance_image(request):
+    """Runs the shared lighting-correction + background-removal pipeline
+    with a chosen finish preset, and returns the result as a data URL so
+    the artisan can preview it (before/after) without saving anything yet.
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+
+    try:
+        body = json.loads(request.body)
+
+        image_base64 = body.get("imageBase64")
+        preset = body.get("preset", "marketplace_standard")
+
+        if not image_base64:
+            return JsonResponse({"error": "imageBase64 is required."}, status=400)
+
+        if preset not in IMAGE_PRESETS:
+            preset = "marketplace_standard"
+
+        image_bytes = base64.b64decode(image_base64)
+        enhanced_bytes = run_image_enhance(image_bytes, preset=preset)
+        enhanced_b64 = base64.b64encode(enhanced_bytes).decode("utf-8")
+
+        return JsonResponse({
+            "preset": preset,
+            "imageDataUrl": f"data:image/png;base64,{enhanced_b64}",
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON."}, status=400)
+
+    except Exception as e:
+        return JsonResponse(
+            {"error": "Image enhancement failed.", "details": str(e)},
+            status=500,
+        )

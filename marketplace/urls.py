@@ -16,4 +16,6 @@ urlpatterns = [
     path("orders/<int:order_id>/status/", views.order_status),
     path("gallery/", views.gallery),
     path("translate/", views.translate),
+    path("pricing/", views.pricing),
+    path("enhance/", views.enhance_image),
 ]

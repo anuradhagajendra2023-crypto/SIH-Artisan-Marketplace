@@ -337,7 +337,26 @@ const BuyerDashboard = () => {
                   {p.image_data_url && (
                     <img src={p.image_data_url} alt={p.title} className="product-card-img" />
                   )}
-                  <h4>{p.title}</h4>
+                  <h4>
+                    {p.title}
+                    {p.artisan_is_verified && (
+                      <span
+                        title="Verified artisan"
+                        style={{
+                          marginLeft: 6,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: "#2f6f4f",
+                          background: "#e3f0e6",
+                          borderRadius: 10,
+                          padding: "2px 8px",
+                          verticalAlign: "middle",
+                        }}
+                      >
+                        ✓ Verified
+                      </span>
+                    )}
+                  </h4>
                   <p className="product-card-desc">
                     {p.description?.slice(0, 90)}
                     {p.description?.length > 90 ? "..." : ""}
@@ -347,6 +366,11 @@ const BuyerDashboard = () => {
                       ? `₹${p.price_min_inr}${p.price_max_inr && p.price_max_inr !== p.price_min_inr ? ` - ₹${p.price_max_inr}` : ""}`
                       : "Price on request"}
                   </strong>
+                  {p.units_sold > 0 && (
+                    <p style={{ margin: "4px 0 0", fontSize: 11, color: "#8b8279" }}>
+                      {p.units_sold} sold on Kaarigar
+                    </p>
+                  )}
 
                   {placedProductIds.includes(p.id) ? (
                     <span className="order-placed-tag">✓ Order placed</span>
@@ -470,6 +494,17 @@ const BuyerDashboard = () => {
               <h2 className="modal-title">
                 {modalLang === "hi" && selectedProduct.title_hi ? selectedProduct.title_hi : selectedProduct.title}
               </h2>
+
+              {(selectedProduct.artisan_is_verified || selectedProduct.units_sold > 0) && (
+                <p style={{ margin: "0 0 10px", fontSize: 12, color: "#6f665f" }}>
+                  {selectedProduct.artisan_is_verified && (
+                    <span style={{ color: "#2f6f4f", fontWeight: 600, marginRight: 10 }}>
+                      ✓ Verified artisan
+                    </span>
+                  )}
+                  {selectedProduct.units_sold > 0 && <span>{selectedProduct.units_sold} sold on Kaarigar</span>}
+                </p>
+              )}
 
               <p className="modal-desc">
                 {modalLang === "hi" && selectedProduct.description_hi
