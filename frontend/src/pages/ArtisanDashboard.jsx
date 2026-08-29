@@ -240,9 +240,9 @@ const ArtisanDashboard = () => {
         title: voiceResult.english?.title || "",
         description: voiceResult.english?.description || "",
         tags: voiceResult.english?.tags || [],
-        title_hi: voiceResult.hindi?.title || "",
-        description_hi: voiceResult.hindi?.description || "",
-        tags_hi: voiceResult.hindi?.tags || [],
+        title_hi: voiceResult.local?.title || "",
+        description_hi: voiceResult.local?.description || "",
+        tags_hi: voiceResult.local?.tags || [],
         price_min_inr: voicePrice.min ? Number(voicePrice.min) : null,
         price_max_inr: voicePrice.max ? Number(voicePrice.max) : null,
         source: "voice",
@@ -488,7 +488,7 @@ const ArtisanDashboard = () => {
             <div className="step-number">2</div>
             <div>
               <h3>Voice Cataloging</h3>
-              <p>Describe the piece out loud, in Hindi or English. We'll transcribe it and draft a bilingual listing.</p>
+              <p>Describe the piece out loud, in any language you speak. We'll detect the language, transcribe it, and draft a bilingual listing.</p>
             </div>
           </div>
 
@@ -513,7 +513,7 @@ const ArtisanDashboard = () => {
                 <span>
                   {isRecording
                     ? "Speak clearly about the piece — material, technique, price idea."
-                    : "Describe the piece out loud, in Hindi or English."}
+                    : "Describe the piece out loud, in any language you're comfortable with."}
                 </span>
               </div>
             </div>
@@ -588,18 +588,18 @@ const ArtisanDashboard = () => {
                   </div>
                 )}
 
-                {voiceResult.hindi && (
+                {voiceResult.local && (
                   <div style={{ flex: "1 1 260px" }}>
                     <p className="result-label" style={{ marginBottom: 8 }}>
-                      हिन्दी
+                      {voiceResult.detected_language ? voiceResult.detected_language.toUpperCase() : "LOCAL LANGUAGE"}
                     </p>
-                    <h3 style={{ margin: "0 0 10px", fontSize: 18 }}>{voiceResult.hindi.title}</h3>
+                    <h3 style={{ margin: "0 0 10px", fontSize: 18 }}>{voiceResult.local.title}</h3>
                     <p style={{ fontSize: 13, color: "#6f665f", lineHeight: 1.7, marginBottom: 10 }}>
-                      {voiceResult.hindi.description}
+                      {voiceResult.local.description}
                     </p>
-                    {voiceResult.hindi.tags?.length > 0 && (
+                    {voiceResult.local.tags?.length > 0 && (
                       <div className="listing-tags">
-                        {voiceResult.hindi.tags.map((t, i) => (
+                        {voiceResult.local.tags.map((t, i) => (
                           <span key={i}>{t}</span>
                         ))}
                       </div>
