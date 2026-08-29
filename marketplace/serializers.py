@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Product, Order, GalleryItem
+from .models import Product, Order, GalleryMedia
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -87,11 +87,11 @@ class OrderStatusSerializer(serializers.ModelSerializer):
         fields = ["status"]
 
 
-class GalleryItemSerializer(serializers.ModelSerializer):
+class GalleryMediaSerializer(serializers.ModelSerializer):
     artisan_username = serializers.CharField(source="artisan.username", read_only=True)
 
     class Meta:
-        model = GalleryItem
+        model = GalleryMedia
         fields = [
             "id",
             "artisan",

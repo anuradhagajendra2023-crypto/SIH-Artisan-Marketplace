@@ -616,25 +616,79 @@ def product_detail(request, product_id):
 
     return Response(ProductSerializer(product).data)
 # ============================================================
-# GALLERY
+# ============================================================
+# CRAFT GALLERY
 # ============================================================
 
-from .models import GalleryItem
-from .serializers import GalleryItemSerializer
+from .models import GalleryMedia
+from .serializers import GalleryMediaSerializer
 
 
 @api_view(["GET", "POST"])
 @permission_classes([AllowAny])
 def gallery(request):
     if request.method == "GET":
-        qs = GalleryItem.objects.all()
-        return Response(GalleryItemSerializer(qs, many=True).data)
+        qs = GalleryMedia.objects.all()
+        craft = request.GET.get("craft_type", "").strip()
+        if craft:
+            qs = qs.filter(craft_type__icontains=craft)
+        return Response(GalleryMediaSerializer(qs, many=True).data)
 
     if not request.user.is_authenticated:
         return Response({"error": "Authentication required."}, status=401)
 
-    serializer = GalleryItemSerializer(data=request.data)
+    serializer = GalleryMediaSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save(artisan=request.user)
         return Response(serializer.data, status=201)
     return Response(serializer.errors, status=400)
+
+
+# ============================================================
+# TRANSLATION (AI-powered, any language)
+# ============================================================
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def translate(request):
+    """Takes a dict of {key: englishText} and a target language name,
+    returns {key: translatedText} using Gemini. Used to translate the
+    whole UI into whatever language the person picks, including
+    regional and tribal languages not covered by a fixed language list.
+    """
+    texts = request.data.get("texts")
+    target_language = request.data.get("targetLanguage")
+
+    if not texts or not target_language:
+        return Response({"error": "texts and targetLanguage are required."}, status=400)
+
+    if target_language.strip().lower() in ("english", "en"):
+        return Response(texts)
+
+    prompt = (
+        "Translate each value in this JSON object into "
+        f"{target_language}. Keep the same keys. Keep translations "
+        "short and natural for buttons/labels in a mobile app. "
+        "Respond ONLY with valid JSON, no markdown fences, no preamble, "
+        "same keys as input:\n\n" + json.dumps(texts)
+    )
+
+    try:
+        resp = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent",
+            headers={"Content-Type": "application/json"},
+            params={"key": GEMINI_API_KEY},
+            json={"contents": [{"parts": [{"text": prompt}]}]},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        raw = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+        raw = raw.strip()
+        if raw.startswith("```"):
+            raw = raw.strip("`")
+            if raw.lower().startswith("json"):
+                raw = raw[4:]
+        translated = json.loads(raw)
+        return Response(translated)
+    except Exception as e:
+        return Response({"error": f"Translation failed: {str(e)}"}, status=500)
