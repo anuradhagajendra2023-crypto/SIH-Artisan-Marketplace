@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../components/Auth.css';
+import { useLanguage } from '../context/LanguageContext';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 
 
@@ -11,7 +12,7 @@ export default function Register() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const { register } = useAuth();
-  const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const update = (key) => (e) => setForm({ ...form, [key]: e.target.value });
   const setRole = (role) => setForm((f) => ({ ...f, role }));
@@ -55,19 +56,16 @@ export default function Register() {
         </div>
 
         <div className="auth-brand-mid">
-          <h2>Join a marketplace built around the craft, not the middleman.</h2>
-          <p>
-            Whether you make it or you're sourcing it in bulk, Kaarigar connects
-            artisans directly with the buyers who value their work.
-          </p>
+          <h2>{t('registerHeadline')}</h2>
+          <p>{t('registerSub')}</p>
           <ul className="auth-brand-points">
-            <li><span className="dot">🧵</span> Artisans: publish listings from a photo or your voice</li>
-            <li><span className="dot">📦</span> Buyers: place bulk orders across artisan clusters</li>
-            <li><span className="dot">🌍</span> Bilingual listings — English &amp; Hindi</li>
+            <li><span className="dot">🧵</span> {t('registerPoint1')}</li>
+            <li><span className="dot">📦</span> {t('registerPoint2')}</li>
+            <li><span className="dot">🌍</span> {t('registerPoint3')}</li>
           </ul>
         </div>
 
-        <div className="auth-brand-foot">Kaarigar · Built for SIH26090</div>
+        <div className="auth-brand-foot">{t('brandFooter')}</div>
       </div>
 
       <div className="auth-form-panel">
@@ -77,12 +75,12 @@ export default function Register() {
             <span>Kaarigar</span>
           </div>
 
-          <h1>Create your account</h1>
-          <p className="auth-sub">Join Kaarigar in a few seconds.</p>
+          <h1>{t('registerCreateTitle')}</h1>
+          <p className="auth-sub">{t('registerSub2')}</p>
 
           <form onSubmit={handleSubmit}>
             <div className="auth-field">
-              <label>I am a...</label>
+              <label>{t('registerIAmA')}</label>
               <div className="auth-role-group">
                 <div
                   className={`auth-role-card ${form.role === 'artisan' ? 'active' : ''}`}
@@ -90,10 +88,9 @@ export default function Register() {
                   role="button"
                   tabIndex={0}
                 >
-                  <span className="role-icon">🧵</span>
-                  <strong>Artisan</strong>
-                  <span>I make &amp; sell crafts</span>
-                </div>
+                    <span className="role-icon">🧵</span>
+                  <strong>{t('registerArtisanLabel')}</strong>
+                  <span>{t('registerArtisanDesc')}</span>          </div>
                 <div
                   className={`auth-role-card ${form.role === 'buyer' ? 'active' : ''}`}
                   onClick={() => setRole('buyer')}
@@ -101,18 +98,17 @@ export default function Register() {
                   tabIndex={0}
                 >
                   <span className="role-icon">🛍️</span>
-                  <strong>Buyer</strong>
-                  <span>I want to order</span>
-                </div>
+                  <strong>{t('registerBuyerLabel')}</strong>
+                  <span>{t('registerBuyerDesc')}</span>         </div>
               </div>
             </div>
 
             <div className="auth-field">
-              <label htmlFor="reg-username">Username</label>
+              <label htmlFor="reg-username">{t('registerUsername')}</label>
               <div className="auth-input-wrap">
                 <input
                   id="reg-username"
-                  placeholder="Choose a username"
+                  placeholder={t('registerUsernamePlaceholder')}
                   value={form.username}
                   onChange={update('username')}
                   required
@@ -122,11 +118,11 @@ export default function Register() {
             </div>
 
             <div className="auth-field">
-              <label htmlFor="reg-email">Email</label>
+              <label htmlFor="reg-email">{t('registerEmail')}</label>
               <div className="auth-input-wrap">
                 <input
                   id="reg-email"
-                  placeholder="you@example.com"
+                  placeholder={t('registerEmailPlaceholder')}
                   type="email"
                   value={form.email}
                   onChange={update('email')}
@@ -136,11 +132,11 @@ export default function Register() {
             </div>
 
             <div className="auth-field">
-              <label htmlFor="reg-phone">Phone</label>
+              <label htmlFor="reg-phone">{t('registerPhone')}</label>
               <div className="auth-input-wrap">
                 <input
                   id="reg-phone"
-                  placeholder="Phone number"
+                  placeholder={t('registerPhonePlaceholder')}
                   value={form.phone}
                   onChange={update('phone')}
                   autoComplete="tel"
@@ -149,12 +145,12 @@ export default function Register() {
             </div>
 
             <div className="auth-field">
-              <label htmlFor="reg-password">Password</label>
+              <label htmlFor="reg-password">{t('registerPassword')}</label>
               <div className="auth-input-wrap">
                 <input
                   id="reg-password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Create a password"
+                  placeholder={t('registerPasswordPlaceholder')}
                   value={form.password}
                   onChange={update('password')}
                   required
@@ -165,7 +161,7 @@ export default function Register() {
                   className="auth-toggle-visibility"
                   onClick={() => setShowPassword((s) => !s)}
                 >
-                  {showPassword ? 'Hide' : 'Show'}
+                  {showPassword ? t('loginHide') : t('loginShow')}
                 </button>
               </div>
             </div>
@@ -179,12 +175,12 @@ export default function Register() {
 
             <button type="submit" className="auth-submit-btn" disabled={submitting}>
               {submitting && <span className="auth-spinner" />}
-              {submitting ? 'Creating account...' : 'Create Account'}
+              {submitting ? t('registerCreatingAccount') : t('registerButton')}
             </button>
           </form>
 
           <p className="auth-switch">
-            Already have an account? <Link to="/login">Sign in</Link>
+            {t('registerHaveAccount')} <Link to="/login">{t('registerSignInLink')}</Link>
           </p>
         </div>
       </div>
