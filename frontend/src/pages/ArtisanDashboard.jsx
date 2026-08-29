@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import "../components/VoicePanel.css";
+import { Link } from "react-router-dom";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 const ArtisanDashboard = () => {
   const { user, logout } = useAuth();
@@ -238,9 +240,9 @@ const ArtisanDashboard = () => {
         title: voiceResult.english?.title || "",
         description: voiceResult.english?.description || "",
         tags: voiceResult.english?.tags || [],
-        title_hi: voiceResult.hindi?.title || "",
-        description_hi: voiceResult.hindi?.description || "",
-        tags_hi: voiceResult.hindi?.tags || [],
+        title_hi: voiceResult.local?.title || "",
+        description_hi: voiceResult.local?.description || "",
+        tags_hi: voiceResult.local?.tags || [],
         price_min_inr: voicePrice.min ? Number(voicePrice.min) : null,
         price_max_inr: voicePrice.max ? Number(voicePrice.max) : null,
         source: "voice",
@@ -316,26 +318,14 @@ const ArtisanDashboard = () => {
               <p>Cluster fulfillment and AI-drafted catalog listings, built for independent artisans.</p>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <span
-              style={{
-                fontSize: 14,
-                fontWeight: 700,
-                color: "#a3702f",
-                background: "#fbf3e7",
-                padding: "6px 14px",
-                borderRadius: 999,
-                letterSpacing: 0.2,
-              }}
-            >
+          <div className="app-header-actions">
+            <Link to="/gallery" style={{ marginRight: 12, fontWeight: 600 }}>Gallery</Link>
+            <LanguageSwitcher />
+            <span className="user-badge">
+              <span className="user-badge-avatar">{user?.username?.[0]}</span>
               {user?.username}
             </span>
-            <button
-              type="button"
-              className="upload-button"
-              onClick={logout}
-              style={{ padding: "6px 14px" }}
-            >
+            <button type="button" className="upload-button logout-btn" onClick={logout}>
               Logout
             </button>
           </div>
@@ -460,15 +450,8 @@ const ArtisanDashboard = () => {
                     <p className="result-label" style={{ marginBottom: 8 }}>
                       DYNAMIC PRICING ASSISTANT
                     </p>
-                    <div
-                      style={{
-                        padding: "16px 18px",
-                        borderRadius: 14,
-                        background: "#fbf3e7",
-                        borderLeft: "4px solid #c98f4a",
-                      }}
-                    >
-                      <strong style={{ fontSize: 20, color: "#a3702f" }}>
+                    <div className="price-highlight">
+                      <strong>
                         {catalogResult.suggested_price_range_inr}
                       </strong>
                       {catalogResult.price_reasoning && (
@@ -505,7 +488,7 @@ const ArtisanDashboard = () => {
             <div className="step-number">2</div>
             <div>
               <h3>Voice Cataloging</h3>
-              <p>Describe the piece out loud, in Hindi or English. We'll transcribe it and draft a bilingual listing.</p>
+              <p>Describe the piece out loud, in any language you speak. We'll detect the language, transcribe it, and draft a bilingual listing.</p>
             </div>
           </div>
 
@@ -530,7 +513,7 @@ const ArtisanDashboard = () => {
                 <span>
                   {isRecording
                     ? "Speak clearly about the piece — material, technique, price idea."
-                    : "Describe the piece out loud, in Hindi or English."}
+                    : "Describe the piece out loud, in any language you're comfortable with."}
                 </span>
               </div>
             </div>
@@ -605,18 +588,18 @@ const ArtisanDashboard = () => {
                   </div>
                 )}
 
-                {voiceResult.hindi && (
+                {voiceResult.local && (
                   <div style={{ flex: "1 1 260px" }}>
                     <p className="result-label" style={{ marginBottom: 8 }}>
-                      हिन्दी
+                      {voiceResult.detected_language ? voiceResult.detected_language.toUpperCase() : "LOCAL LANGUAGE"}
                     </p>
-                    <h3 style={{ margin: "0 0 10px", fontSize: 18 }}>{voiceResult.hindi.title}</h3>
+                    <h3 style={{ margin: "0 0 10px", fontSize: 18 }}>{voiceResult.local.title}</h3>
                     <p style={{ fontSize: 13, color: "#6f665f", lineHeight: 1.7, marginBottom: 10 }}>
-                      {voiceResult.hindi.description}
+                      {voiceResult.local.description}
                     </p>
-                    {voiceResult.hindi.tags?.length > 0 && (
+                    {voiceResult.local.tags?.length > 0 && (
                       <div className="listing-tags">
-                        {voiceResult.hindi.tags.map((t, i) => (
+                        {voiceResult.local.tags.map((t, i) => (
                           <span key={i}>{t}</span>
                         ))}
                       </div>
@@ -689,49 +672,24 @@ const ArtisanDashboard = () => {
           )}
 
           {!ordersLoading && !ordersError && orders.length === 0 && (
-            <p style={{ color: "#8b8279" }}>No orders yet. Once a buyer orders one of your listings, it'll show up here.</p>
+            <p className="empty-state">No orders yet. Once a buyer orders one of your listings, it'll show up here.</p>
           )}
 
           {orders.map((o) => (
-            <div
-              key={o.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-                padding: "14px 16px",
-                marginTop: 10,
-                borderRadius: 14,
-                background: "#faf7f3",
-                border: "1px solid #e9e0d6",
-              }}
-            >
+            <div key={o.id} className="list-item">
               {o.product_image && (
-                <img
-                  src={o.product_image}
-                  alt={o.product_title}
-                  style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 10, flexShrink: 0 }}
-                />
+                <img src={o.product_image} alt={o.product_title} className="list-item-thumb" />
               )}
-              <div style={{ flex: 1 }}>
-                <strong style={{ display: "block", fontSize: 14, color: "#2c2824" }}>
+              <div className="list-item-info">
+                <strong>
                   {o.product_title} × {o.quantity}
                 </strong>
-                <span style={{ fontSize: 12, color: "#8b8279" }}>
+                <span>
                   {o.buyer_username}
                   {o.total_price_inr ? ` · ₹${o.total_price_inr.toLocaleString("en-IN")}` : ""}
                 </span>
               </div>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: "5px 12px",
-                  borderRadius: 999,
-                  background: o.status === "cancelled" ? "#fdecea" : "#fbf3e7",
-                  color: o.status === "cancelled" ? "#8d3d36" : "#a3702f",
-                }}
-              >
+              <span className={`status-pill ${o.status === "cancelled" ? "cancelled" : ""}`}>
                 {STATUS_LABELS[o.status] || o.status}
               </span>
               {STATUS_FLOW.indexOf(o.status) >= 0 && STATUS_FLOW.indexOf(o.status) < STATUS_FLOW.length - 1 && (

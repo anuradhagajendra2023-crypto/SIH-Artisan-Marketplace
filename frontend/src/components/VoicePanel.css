@@ -1363,3 +1363,451 @@
     height: 74px;
   }
 }
+
+/* =========================================================
+   App header actions (dashboard top bar)
+   ========================================================= */
+
+.app-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #a3702f;
+  background: #fbf3e7;
+  padding: 6px 14px 6px 6px;
+  border-radius: 999px;
+}
+
+.user-badge-avatar {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border-radius: 50%;
+  background: #9a5d3e;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.logout-btn {
+  padding: 8px 16px !important;
+}
+
+/* =========================================================
+   Generic form fields (buyer form, search, etc.)
+   ========================================================= */
+
+.field-block {
+  margin-bottom: 16px;
+}
+
+.field-block-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 750;
+  color: #3d352f;
+  margin-bottom: 6px;
+}
+
+.field-row-2 {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.field-row-2 .field-block {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.text-input,
+.select-input {
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 11px;
+  border: 1px solid #e3d7cb;
+  background: #fff;
+  font-size: 14px;
+  color: #28231f;
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.text-input:focus,
+.select-input:focus {
+  outline: none;
+  border-color: #9a5d3e;
+  box-shadow: 0 0 0 3px rgba(154, 93, 62, 0.14);
+}
+
+.search-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.search-row .text-input {
+  flex: 1;
+}
+
+/* =========================================================
+   Price highlight (dynamic pricing box)
+   ========================================================= */
+
+.price-highlight {
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: #fbf3e7;
+  border-left: 4px solid #c98f4a;
+}
+
+.price-highlight strong {
+  font-size: 20px;
+  color: #a3702f;
+}
+
+.price-highlight p {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #6f665f;
+}
+
+/* =========================================================
+   List rows (orders received / my orders / cluster allocation)
+   ========================================================= */
+
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  margin-top: 10px;
+  border-radius: 14px;
+  background: #faf7f3;
+  border: 1px solid #e9e0d6;
+  flex-wrap: wrap;
+}
+
+.list-item-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.list-item-info {
+  flex: 1;
+  min-width: 140px;
+}
+
+.list-item-info strong {
+  display: block;
+  font-size: 14px;
+  color: #2c2824;
+}
+
+.list-item-info span {
+  font-size: 12px;
+  color: #8b8279;
+}
+
+.match-badge {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 50%;
+  border: 2px dashed #c98f6a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #9a5d3e;
+}
+
+.status-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #fbf3e7;
+  color: #a3702f;
+  white-space: nowrap;
+}
+
+.status-pill.cancelled {
+  background: #fdecea;
+  color: #8d3d36;
+}
+
+.cluster-summary-box p {
+  color: #3d6b3d;
+}
+
+.cluster-summary-box.failed p {
+  color: #8d3d36;
+}
+
+.empty-state {
+  color: #8b8279;
+}
+
+/* =========================================================
+   Product grid (Browse Products)
+   ========================================================= */
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 16px;
+}
+
+.product-card {
+  padding: 14px;
+  border-radius: 16px;
+  background: #faf7f3;
+  border: 1px solid #e9e0d6;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 26px rgba(65, 48, 31, 0.1);
+}
+
+.product-card-img {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  background: #efe7dc;
+  display: block;
+}
+
+.product-card h4 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  color: #2c2824;
+}
+
+.product-card-desc {
+  font-size: 12px;
+  color: #6f665f;
+  line-height: 1.5;
+  margin-bottom: 8px;
+  min-height: 36px;
+}
+
+.product-card-price {
+  display: block;
+  color: #a3702f;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.product-card-order {
+  display: flex;
+  gap: 8px;
+}
+
+.qty-input {
+  width: 56px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #e3d7cb;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.order-placed-tag {
+  font-size: 12px;
+  font-weight: 700;
+  color: #3d6b3d;
+}
+
+/* =========================================================
+   Product detail modal
+   ========================================================= */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 20, 18, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  backdrop-filter: blur(2px);
+}
+
+.modal-card {
+  background: #fff;
+  border-radius: 22px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 26px;
+  position: relative;
+  text-align: left;
+  box-shadow: 0 30px 80px rgba(20, 15, 10, 0.35);
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f4ece4;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: #6f665f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-image {
+  width: 100%;
+  max-height: 300px;
+  object-fit: cover;
+  border-radius: 16px;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.lang-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.lang-tab {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid #e3d7cb;
+  background: #fff;
+  color: #2c2824;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.lang-tab.active {
+  background: #28231f;
+  color: #fff;
+  font-weight: 800;
+  border-color: #28231f;
+}
+
+.modal-title {
+  margin: 0 0 10px;
+  font-size: 22px;
+  color: #2c2824;
+}
+
+.modal-desc {
+  font-size: 14px;
+  color: #6f665f;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.modal-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.modal-tags span {
+  font-size: 11px;
+  background: #fbf3e7;
+  color: #a3702f;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.modal-meta {
+  font-size: 12px;
+  color: #8b8279;
+  margin-bottom: 8px;
+}
+
+.modal-price {
+  display: block;
+  font-size: 20px;
+  color: #a3702f;
+  margin-bottom: 16px;
+  font-weight: 800;
+}
+
+.modal-order-row {
+  display: flex;
+  gap: 10px;
+}
+
+.modal-order-row .create-listing-button {
+  flex: 1;
+}
+
+/* =========================================================
+   Responsive: header / grid / modal / forms
+   ========================================================= */
+
+@media (max-width: 700px) {
+  .voice-header {
+    flex-wrap: wrap;
+  }
+
+  .app-header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+    gap: 10px;
+  }
+
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-card {
+    max-width: 100%;
+    border-radius: 22px 22px 0 0;
+    max-height: 92vh;
+  }
+
+  .field-row-2 {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .search-row {
+    flex-direction: column;
+  }
+}

@@ -439,24 +439,25 @@ def voice_catalog(request):
                 status=400
             )
 
-        prompt = """You are an assistant embedded in a mobile app for marginalized Indian artisans. An artisan has recorded a spoken description of a handmade product, in Hindi, English, or a mix of both. First transcribe exactly what was said. Then produce a market-ready bilingual catalog listing based on it.
+        prompt = """You are an assistant embedded in a mobile app for marginalized Indian artisans. An artisan has recorded a spoken description of a handmade product, in ANY Indian language (Hindi, Tamil, Bengali, Marathi, Telugu, Kannada, Odia, Punjabi, Gujarati, Malayalam, English, or a mix of languages). First detect which language was actually spoken. Then transcribe exactly what was said in that language's native script. Then produce a market-ready bilingual catalog listing: one version in English, and one version in the artisan's own detected spoken language (native script).
 
 Respond ONLY with valid JSON (no markdown fences, no preamble), in exactly this shape:
 {
-  "transcript": "exact transcription of the spoken audio, in the language(s) spoken",
+  "detected_language": "name of the detected language in English, e.g. 'Tamil' or 'Bengali' or 'Hindi'",
+  "transcript": "exact transcription of the spoken audio, in the language(s) spoken, native script",
   "english": {
     "title": "short catchy product title in English, under 8 words",
     "description": "2-3 sentence buyer-facing description in English",
     "tags": ["4-6 short English search tags"]
   },
-  "hindi": {
-    "title": "same product title translated into Hindi (Devanagari script)",
-    "description": "same description translated into Hindi (Devanagari script)",
-    "tags": ["4-6 short Hindi search tags (Devanagari script)"]
+  "local": {
+    "title": "same product title translated into the detected language (native script)",
+    "description": "same description translated into the detected language (native script)",
+    "tags": ["4-6 short search tags in the detected language (native script)"]
   }
 }
 
-If the transcript has very little product information, still produce a reasonable generic handmade-craft listing in both languages rather than leaving fields empty."""
+If the transcript has very little product information, still produce a reasonable generic handmade-craft listing in both languages rather than leaving fields empty. If the spoken language cannot be confidently identified, default detected_language to 'Hindi'."""
 
         response = requests.post(
             f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent",
@@ -614,3 +615,26 @@ def product_detail(request, product_id):
         return Response({"error": "Product not found."}, status=404)
 
     return Response(ProductSerializer(product).data)
+# ============================================================
+# GALLERY
+# ============================================================
+
+from .models import GalleryItem
+from .serializers import GalleryItemSerializer
+
+
+@api_view(["GET", "POST"])
+@permission_classes([AllowAny])
+def gallery(request):
+    if request.method == "GET":
+        qs = GalleryItem.objects.all()
+        return Response(GalleryItemSerializer(qs, many=True).data)
+
+    if not request.user.is_authenticated:
+        return Response({"error": "Authentication required."}, status=401)
+
+    serializer = GalleryItemSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(artisan=request.user)
+        return Response(serializer.data, status=201)
+    return Response(serializer.errors, status=400)

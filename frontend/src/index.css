@@ -52,6 +52,8 @@
 
 body {
   margin: 0;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
 }
 
 #root {
@@ -64,6 +66,10 @@ body {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
 }
 
 h1,

@@ -8,6 +8,7 @@ import Register from "./pages/Register.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import ArtisanDashboard from "./pages/ArtisanDashboard.jsx";
 import BuyerDashboard from "./pages/BuyerDashboard.jsx";
+import Gallery from "./pages/Gallery.jsx";
 
 function Home() {
   const { user } = useAuth();
@@ -44,6 +45,14 @@ function App() {
         element={
           <ProtectedRoute>
             <Home />
+          </ProtectedRoute>
+        }
+      />
+            <Route
+        path="/gallery"
+        element={
+          <ProtectedRoute>
+            <Gallery />
           </ProtectedRoute>
         }
       />
