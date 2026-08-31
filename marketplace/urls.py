@@ -18,4 +18,6 @@ urlpatterns = [
     path("translate/", views.translate),
     path("pricing/", views.pricing),
     path("enhance/", views.enhance_image),
+    path("verification/", views.verification),
+    path("products/<int:product_id>/ask/", views.ask_product_question),
 ]

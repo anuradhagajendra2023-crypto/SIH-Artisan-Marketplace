@@ -160,3 +160,44 @@ class GalleryMedia(models.Model):
 
     def __str__(self):
         return f"{self.media_type} by {self.artisan.username}"
+
+
+class VerificationRequest(models.Model):
+    """Trust Badge: a lightweight, reference-based KYC alternative for
+    artisans who may not have formal documents. An artisan submits a
+    photo + a reference person; an admin reviews it in Django admin and
+    approves/rejects, which flips User.is_verified.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
+    artisan = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="verification_requests",
+    )
+
+    photo_data_url = models.TextField()
+    reference_name = models.CharField(max_length=200)
+    reference_phone = models.CharField(max_length=20, blank=True)
+    reference_relation = models.CharField(max_length=200, blank=True)
+    note = models.TextField(blank=True)
+
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    admin_note = models.TextField(blank=True)
+
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-submitted_at"]
+
+    def __str__(self):
+        return f"Verification for {self.artisan.username} ({self.status})"

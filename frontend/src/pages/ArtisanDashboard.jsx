@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import "../components/VoicePanel.css";
 import { Link } from "react-router-dom";
 import LanguageSwitcher from "../components/LanguageSwitcher";
+import OrderStatusStepper from "../components/OrderStatusStepper";
 
 const ArtisanDashboard = () => {
   const { user, logout } = useAuth();
@@ -30,6 +31,19 @@ const ArtisanDashboard = () => {
     { id: "clean_white", label: "Clean white background" },
     { id: "warm_lifestyle", label: "Warm lifestyle shot" },
   ];
+
+  // ---------- TRUST BADGE (verification) ----------
+  const [verifLoading, setVerifLoading] = useState(true);
+  const [verificationRequest, setVerificationRequest] = useState(null); // null = no request submitted yet
+  const [verifPhotoDataUrl, setVerifPhotoDataUrl] = useState(null);
+  const [verifReferenceName, setVerifReferenceName] = useState("");
+  const [verifReferencePhone, setVerifReferencePhone] = useState("");
+  const [verifReferenceRelation, setVerifReferenceRelation] = useState("");
+  const [verifNote, setVerifNote] = useState("");
+  const [verifSubmitting, setVerifSubmitting] = useState(false);
+  const [verifError, setVerifError] = useState(null);
+
+  const verifPhotoInputRef = useRef(null);
 
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
@@ -218,6 +232,9 @@ const ArtisanDashboard = () => {
   const [voicePrice, setVoicePrice] = useState({ min: "", max: "" });
   const [voiceSaveState, setVoiceSaveState] = useState("idle"); // idle | saving | saved | error
 
+  // ---------- COMBINED LISTING (Photo + Voice) ----------
+  const [combinedSaveState, setCombinedSaveState] = useState("idle"); // idle | saving | saved | error
+
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const audioStreamRef = useRef(null);
@@ -326,6 +343,61 @@ const ArtisanDashboard = () => {
     }
   };
 
+  // Merges the photo-drafted listing (visual details: title, category,
+  // technique, tags, price) with the voice-drafted listing (spoken story,
+  // bilingual description) into one richer listing. Only ever shown once
+  // both a photo and a voice listing exist for this session — no new AI
+  // call needed, it's a client-side merge of what's already been generated.
+  const getCombinedListing = () => {
+    if (!catalogResult || !voiceResult) return null;
+
+    const { min: photoMin, max: photoMax } = parsePriceRange(
+      catalogResult.suggested_price_range_inr
+    );
+    const min = photoMin ?? (voicePrice.min ? Number(voicePrice.min) : null);
+    const max = photoMax ?? (voicePrice.max ? Number(voicePrice.max) : null);
+
+    const mergedTags = Array.from(
+      new Set([...(catalogResult.tags || []), ...(voiceResult.english?.tags || [])])
+    );
+
+    const description = [catalogResult.description, voiceResult.english?.description]
+      .filter(Boolean)
+      .join(" ");
+
+    return {
+      title: catalogResult.title || voiceResult.english?.title || "",
+      description,
+      tags: mergedTags,
+      category: catalogResult.category || "",
+      craft_technique: catalogResult.craft_technique_guess || "",
+      price_min_inr: min,
+      price_max_inr: max,
+      title_hi: voiceResult.local?.title || "",
+      description_hi: voiceResult.local?.description || "",
+      tags_hi: voiceResult.local?.tags || [],
+    };
+  };
+
+  const handleSaveCombinedListing = async () => {
+    const combined = getCombinedListing();
+    if (!combined) return;
+    setCombinedSaveState("saving");
+
+    try {
+      await client.post("/products/", {
+        ...combined,
+        image_data_url: photoDataUrl || "",
+        source: "photo+voice",
+        status: "published",
+      });
+      setCombinedSaveState("saved");
+    } catch (err) {
+      console.error("Save combined listing error:", err?.response?.data || err.message);
+      setCombinedSaveState("error");
+    }
+  };
+
   // ---------- ORDERS RECEIVED ----------
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
@@ -358,6 +430,64 @@ const ArtisanDashboard = () => {
   useEffect(() => {
     loadOrders();
   }, []);
+
+  // ---------- TRUST BADGE (verification) ----------
+  const loadVerificationStatus = async () => {
+    setVerifLoading(true);
+    try {
+      const { data } = await client.get("/verification/");
+      setVerificationRequest(data); // null if the artisan has never submitted one
+    } catch (err) {
+      console.error("Verification status error:", err?.response?.data || err.message);
+    } finally {
+      setVerifLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!user?.is_verified) loadVerificationStatus();
+    else setVerifLoading(false);
+  }, [user]);
+
+  const handleVerifPhotoSelected = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setVerifPhotoDataUrl(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmitVerification = async () => {
+    if (!verifPhotoDataUrl) {
+      setVerifError("Please add a photo first.");
+      return;
+    }
+    if (!verifReferenceName.trim()) {
+      setVerifError("Please add at least one reference name.");
+      return;
+    }
+
+    setVerifSubmitting(true);
+    setVerifError(null);
+
+    try {
+      const { data } = await client.post("/verification/", {
+        photo_data_url: verifPhotoDataUrl,
+        reference_name: verifReferenceName.trim(),
+        reference_phone: verifReferencePhone.trim(),
+        reference_relation: verifReferenceRelation.trim(),
+        note: verifNote.trim(),
+      });
+      setVerificationRequest(data);
+    } catch (err) {
+      console.error("Verification submit error:", err?.response?.data || err.message);
+      setVerifError(
+        err?.response?.data?.error || "Could not submit your request. Please try again."
+      );
+    } finally {
+      setVerifSubmitting(false);
+    }
+  };
 
   const advanceOrder = async (order) => {
     const currentIndex = STATUS_FLOW.indexOf(order.status);
@@ -400,6 +530,171 @@ const ArtisanDashboard = () => {
               Logout
             </button>
           </div>
+        </div>
+
+        {/* ============ TRUST BADGE ============ */}
+        <div className="workspace-card" style={{ marginBottom: 20 }}>
+          <div className="card-top">
+            <div className="step-number">✓</div>
+            <div>
+              <h3>Trust Badge</h3>
+              <p>Verify your account once so buyers see a "✓ Verified" badge on your listings — no formal documents required.</p>
+            </div>
+          </div>
+
+          {user?.is_verified ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "12px 16px",
+                borderRadius: 12,
+                background: "#e3f0e6",
+                border: "1px solid #2f6f4f",
+              }}
+            >
+              <span style={{ fontSize: 20 }}>✓</span>
+              <div>
+                <strong style={{ color: "#2f6f4f" }}>You're a verified artisan</strong>
+                <p style={{ margin: "2px 0 0", fontSize: 12, color: "#4a6e5a" }}>
+                  This badge is now visible on all your listings.
+                </p>
+              </div>
+            </div>
+          ) : verifLoading ? (
+            <p style={{ fontSize: 13, color: "#8b8279" }}>Checking your verification status...</p>
+          ) : verificationRequest?.status === "pending" ? (
+            <div
+              style={{
+                padding: "12px 16px",
+                borderRadius: 12,
+                background: "#fdf6e3",
+                border: "1px solid #d8c48c",
+              }}
+            >
+              <strong style={{ fontSize: 13 }}>⏳ Under review</strong>
+              <p style={{ margin: "6px 0 0", fontSize: 12, color: "#6f665f" }}>
+                Submitted on {new Date(verificationRequest.submitted_at).toLocaleDateString("en-IN")}.
+                Reference: {verificationRequest.reference_name}. We'll update this once it's reviewed.
+              </p>
+            </div>
+          ) : (
+            <div>
+              {verificationRequest?.status === "rejected" && (
+                <div
+                  className="error-box"
+                  style={{ marginBottom: 14 }}
+                >
+                  <div className="error-icon">!</div>
+                  <div>
+                    <strong>Previous request wasn't approved</strong>
+                    <p>
+                      {verificationRequest.admin_note ||
+                        "Please double-check your photo and reference details, then resubmit."}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                <div style={{ flex: "0 0 140px" }}>
+                  {verifPhotoDataUrl ? (
+                    <div style={{ position: "relative" }}>
+                      <img
+                        src={verifPhotoDataUrl}
+                        alt="Verification"
+                        style={{ width: 140, height: 140, objectFit: "cover", borderRadius: 12 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setVerifPhotoDataUrl(null)}
+                        style={{
+                          position: "absolute",
+                          top: 6,
+                          right: 6,
+                          border: "none",
+                          borderRadius: 20,
+                          padding: "2px 8px",
+                          fontSize: 11,
+                          background: "rgba(0,0,0,0.6)",
+                          color: "#fff",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Retake
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => verifPhotoInputRef.current?.click()}
+                      style={{
+                        width: 140,
+                        height: 140,
+                        borderRadius: 12,
+                        border: "1px dashed #d8d0c4",
+                        background: "#faf7f2",
+                        color: "#8b8279",
+                        fontSize: 12,
+                        cursor: "pointer",
+                      }}
+                    >
+                      📷
+                      <br />
+                      Add photo
+                    </button>
+                  )}
+                  <input
+                    ref={verifPhotoInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleVerifPhotoSelected}
+                    style={{ display: "none" }}
+                  />
+                </div>
+
+                <div style={{ flex: "1 1 260px", display: "flex", flexDirection: "column", gap: 10 }}>
+                  <input
+                    type="text"
+                    placeholder="Reference name (a cluster coordinator, NGO contact, or fellow verified artisan)"
+                    value={verifReferenceName}
+                    onChange={(e) => setVerifReferenceName(e.target.value)}
+                    style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #e3d7cb", fontSize: 13 }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Reference phone (optional)"
+                    value={verifReferencePhone}
+                    onChange={(e) => setVerifReferencePhone(e.target.value)}
+                    style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #e3d7cb", fontSize: 13 }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="How do you know them? (optional)"
+                    value={verifReferenceRelation}
+                    onChange={(e) => setVerifReferenceRelation(e.target.value)}
+                    style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #e3d7cb", fontSize: 13 }}
+                  />
+                </div>
+              </div>
+
+              {verifError && (
+                <p style={{ marginTop: 10, fontSize: 12, color: "#b3432b" }}>{verifError}</p>
+              )}
+
+              <button
+                type="button"
+                className="create-listing-button"
+                style={{ marginTop: 14 }}
+                onClick={handleSubmitVerification}
+                disabled={verifSubmitting}
+              >
+                {verifSubmitting ? <span className="button-spinner" /> : <span className="sparkle">✦</span>}
+                {verifSubmitting ? "Submitting..." : "Submit for verification"}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="workspace">
@@ -804,6 +1099,94 @@ const ArtisanDashboard = () => {
           )}
         </div>
 
+        {/* ============ COMBINED LISTING (Photo + Voice) ============ */}
+        {catalogResult && voiceResult && (
+          <div className="workspace-card" style={{ marginTop: 20, border: "1px solid #2f6f4f" }}>
+            <div className="card-top">
+              <div className="step-number">✦</div>
+              <div>
+                <h3>Combined Listing (Photo + Voice)</h3>
+                <p>
+                  Both a photo and a voice listing are ready for this piece — combine the visual
+                  details with your spoken story into one richer, bilingual listing.
+                </p>
+              </div>
+            </div>
+
+            {(() => {
+              const combined = getCombinedListing();
+              if (!combined) return null;
+              return (
+                <div>
+                  <p className="result-label" style={{ marginBottom: 4 }}>
+                    {combined.category?.toUpperCase()}
+                  </p>
+                  <h3 style={{ margin: "0 0 10px", fontSize: 20 }}>{combined.title}</h3>
+                  <p style={{ fontSize: 13, color: "#6f665f", lineHeight: 1.7, marginBottom: 10 }}>
+                    {combined.description}
+                  </p>
+                  {combined.craft_technique && (
+                    <p style={{ fontSize: 12, color: "#8b8279", marginBottom: 12 }}>
+                      <strong>Technique:</strong> {combined.craft_technique}
+                    </p>
+                  )}
+                  {combined.tags?.length > 0 && (
+                    <div className="listing-tags" style={{ marginTop: 0, marginBottom: 16 }}>
+                      {combined.tags.map((t, i) => (
+                        <span key={i}>{t}</span>
+                      ))}
+                    </div>
+                  )}
+                  {(combined.price_min_inr || combined.price_max_inr) && (
+                    <div className="price-highlight" style={{ marginBottom: 16 }}>
+                      <strong>
+                        ₹{combined.price_min_inr?.toLocaleString("en-IN") ?? "?"} - ₹
+                        {combined.price_max_inr?.toLocaleString("en-IN") ?? "?"}
+                      </strong>
+                    </div>
+                  )}
+
+                  {combined.title_hi && (
+                    <div style={{ marginTop: 4, marginBottom: 4 }}>
+                      <p className="result-label" style={{ marginBottom: 8 }}>
+                        {voiceResult.detected_language
+                          ? voiceResult.detected_language.toUpperCase()
+                          : "LOCAL LANGUAGE"}
+                      </p>
+                      <h3 style={{ margin: "0 0 10px", fontSize: 18 }}>{combined.title_hi}</h3>
+                      <p style={{ fontSize: 13, color: "#6f665f", lineHeight: 1.7, marginBottom: 10 }}>
+                        {combined.description_hi}
+                      </p>
+                      {combined.tags_hi?.length > 0 && (
+                        <div className="listing-tags">
+                          {combined.tags_hi.map((t, i) => (
+                            <span key={i}>{t}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    className="create-listing-button"
+                    style={{ marginTop: 18 }}
+                    onClick={handleSaveCombinedListing}
+                    disabled={combinedSaveState === "saving" || combinedSaveState === "saved"}
+                  >
+                    {combinedSaveState === "saving" && <span className="button-spinner" />}
+                    {combinedSaveState === "idle" && <span className="sparkle">⇧</span>}
+                    {combinedSaveState === "saving" && "Saving..."}
+                    {combinedSaveState === "idle" && "Save & publish combined listing"}
+                    {combinedSaveState === "saved" && "✓ Published"}
+                    {combinedSaveState === "error" && "Could not save — tap to retry"}
+                  </button>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
         {/* ============ ORDERS RECEIVED ============ */}
         <div className="workspace-card" style={{ marginTop: 20 }}>
           <div className="card-top">
@@ -844,9 +1227,6 @@ const ArtisanDashboard = () => {
                   {o.total_price_inr ? ` · ₹${o.total_price_inr.toLocaleString("en-IN")}` : ""}
                 </span>
               </div>
-              <span className={`status-pill ${o.status === "cancelled" ? "cancelled" : ""}`}>
-                {STATUS_LABELS[o.status] || o.status}
-              </span>
               {STATUS_FLOW.indexOf(o.status) >= 0 && STATUS_FLOW.indexOf(o.status) < STATUS_FLOW.length - 1 && (
                 <button
                   type="button"
@@ -859,6 +1239,7 @@ const ArtisanDashboard = () => {
                     : `Mark ${STATUS_LABELS[STATUS_FLOW[STATUS_FLOW.indexOf(o.status) + 1]]}`}
                 </button>
               )}
+              <OrderStatusStepper status={o.status} />
             </div>
           ))}
         </div>

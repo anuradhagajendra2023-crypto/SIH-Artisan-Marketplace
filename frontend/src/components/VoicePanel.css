@@ -13,12 +13,12 @@
   background:
     radial-gradient(
       circle at 10% 0%,
-      rgba(255, 194, 125, 0.18),
+      rgba(255, 194, 125, 0.22),
       transparent 30%
     ),
     radial-gradient(
       circle at 90% 10%,
-      rgba(170, 125, 255, 0.13),
+      rgba(224, 168, 84, 0.14),
       transparent 28%
     ),
     #f7f4ef;
@@ -32,6 +32,15 @@
     "Segoe UI",
     sans-serif;
   padding: 28px 20px 50px;
+}
+
+/* Editorial serif treatment for headings — gives the craft/heritage
+   feel the plain sans-serif UI was missing. Reuses "Petrona", already
+   loaded via Google Fonts in index.html for the landing page. */
+.voice-panel-page h1,
+.voice-panel-page h2,
+.voice-panel-page h3 {
+  font-family: "Petrona", Georgia, serif;
 }
 
 .voice-panel-container {
@@ -66,12 +75,13 @@
   align-items: center;
   justify-content: center;
 
-  background: #28231f;
+  background: linear-gradient(155deg, #b65c38, #8f3f28);
   color: #fff;
   font-size: 24px;
   font-weight: 800;
+  font-family: "Petrona", Georgia, serif;
 
-  box-shadow: 0 10px 24px rgba(38, 30, 22, 0.15);
+  box-shadow: 0 10px 24px rgba(150, 70, 40, 0.28);
 }
 
 .brand-area h1 {
@@ -969,7 +979,7 @@
   border: 0;
   border-radius: 15px;
 
-  background: #28231f;
+  background: linear-gradient(155deg, #b65c38, #8f3f28);
   color: #fff;
 
   font-size: 14px;
@@ -978,7 +988,7 @@
   cursor: pointer;
 
   box-shadow:
-    0 14px 30px rgba(40, 35, 31, 0.18);
+    0 14px 30px rgba(150, 70, 40, 0.28);
 
   transition:
     transform 0.2s ease,
@@ -990,7 +1000,7 @@
   transform: translateY(-2px);
 
   box-shadow:
-    0 18px 35px rgba(40, 35, 31, 0.23);
+    0 18px 35px rgba(150, 70, 40, 0.36);
 }
 
 .create-listing-button:disabled {
@@ -1554,6 +1564,99 @@
   color: #8d3d36;
 }
 
+/* ============ ORDER STATUS STEPPER ============ */
+
+.order-stepper {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  flex-basis: 100%;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #e9e0d6;
+}
+
+.order-stepper-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.order-stepper-node {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  border: 2px solid #e3d7cb;
+  background: #fff;
+  color: #fff;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.order-stepper-step.done .order-stepper-node {
+  background: #c9793f;
+  border-color: #c9793f;
+}
+
+.order-stepper-step.current .order-stepper-node {
+  background: #fff;
+  border-color: #c9793f;
+  box-shadow: 0 0 0 4px rgba(201, 121, 63, 0.16);
+}
+
+.order-stepper-step.current .order-stepper-node::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #c9793f;
+}
+
+.order-stepper-label {
+  margin-top: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #b0a696;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.order-stepper-step.done .order-stepper-label,
+.order-stepper-step.current .order-stepper-label {
+  color: #6b4a2e;
+}
+
+.order-stepper-line {
+  flex: 1;
+  min-width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: #e3d7cb;
+  margin: 10px 4px 0;
+  align-self: flex-start;
+  transition: background 0.2s;
+}
+
+.order-stepper-line.filled {
+  background: #c9793f;
+}
+
+@media (max-width: 480px) {
+  .order-stepper-label {
+    font-size: 9px;
+  }
+  .order-stepper-line {
+    min-width: 8px;
+    margin: 10px 2px 0;
+  }
+}
+
 .cluster-summary-box p {
   color: #3d6b3d;
 }
@@ -1715,10 +1818,10 @@
 }
 
 .lang-tab.active {
-  background: #28231f;
+  background: #9a5d3e;
   color: #fff;
   font-weight: 800;
-  border-color: #28231f;
+  border-color: #9a5d3e;
 }
 
 .modal-title {

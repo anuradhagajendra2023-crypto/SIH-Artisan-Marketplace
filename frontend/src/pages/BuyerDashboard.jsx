@@ -5,8 +5,29 @@ import { useAuth } from "../context/AuthContext";
 import "../components/VoicePanel.css";
 import { Link } from "react-router-dom";
 import LanguageSwitcher from "../components/LanguageSwitcher";
+import OrderStatusStepper from "../components/OrderStatusStepper";
 
 const PRODUCT_TYPES = ["Terracotta Pots", "Handloom Sarees", "Wood Carvings"];
+
+const ZeroCommissionBadge = ({ style }) => (
+  <div
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 6,
+      fontSize: 11,
+      fontWeight: 600,
+      color: "#2f6f4f",
+      background: "#e3f0e6",
+      borderRadius: 10,
+      padding: "3px 9px",
+      ...style,
+    }}
+    title="Kaarigar takes zero commission — the full amount you pay goes to the artisan."
+  >
+    💯 100% goes to the artisan
+  </div>
+);
 
 const BuyerDashboard = () => {
   const { user, logout } = useAuth();
@@ -63,6 +84,41 @@ const BuyerDashboard = () => {
   const [detailError, setDetailError] = useState(null);
   const [modalLang, setModalLang] = useState("en");
 
+  // ---------- ASK THE ARTISAN (AI Q&A) ----------
+  const [askQuestion, setAskQuestion] = useState("");
+  const [askAnswer, setAskAnswer] = useState(null);
+  const [askLoading, setAskLoading] = useState(false);
+  const [askError, setAskError] = useState(null);
+
+  const resetAskState = () => {
+    setAskQuestion("");
+    setAskAnswer(null);
+    setAskError(null);
+  };
+
+  const handleAskQuestion = async (e) => {
+    e.preventDefault();
+    if (!askQuestion.trim() || !selectedProduct) return;
+
+    setAskLoading(true);
+    setAskError(null);
+    setAskAnswer(null);
+
+    try {
+      const { data } = await client.post(`/products/${selectedProduct.id}/ask/`, {
+        question: askQuestion.trim(),
+      });
+      setAskAnswer(data.answer);
+    } catch (err) {
+      console.error("Ask the artisan error:", err?.response?.data || err.message);
+      setAskError(
+        err?.response?.data?.error || "Could not get an answer right now. Please try again."
+      );
+    } finally {
+      setAskLoading(false);
+    }
+  };
+
   const loadProducts = async (query = "") => {
     setProductsLoading(true);
     setProductsError(null);
@@ -112,6 +168,7 @@ const BuyerDashboard = () => {
     setModalLang("en");
     setDetailError(null);
     setDetailLoading(true);
+    resetAskState();
     try {
       const { data } = await client.get(`/products/${product.id}/`);
       setSelectedProduct(data);
@@ -123,7 +180,10 @@ const BuyerDashboard = () => {
     }
   };
 
-  const closeProductDetail = () => setSelectedProduct(null);
+  const closeProductDetail = () => {
+    setSelectedProduct(null);
+    resetAskState();
+  };
 
   // ---------- MY ORDERS ----------
   const [myOrders, setMyOrders] = useState([]);
@@ -366,6 +426,9 @@ const BuyerDashboard = () => {
                       ? `₹${p.price_min_inr}${p.price_max_inr && p.price_max_inr !== p.price_min_inr ? ` - ₹${p.price_max_inr}` : ""}`
                       : "Price on request"}
                   </strong>
+                  <div style={{ margin: "6px 0 0" }}>
+                    <ZeroCommissionBadge />
+                  </div>
                   {p.units_sold > 0 && (
                     <p style={{ margin: "4px 0 0", fontSize: 11, color: "#8b8279" }}>
                       {p.units_sold} sold on Kaarigar
@@ -446,14 +509,12 @@ const BuyerDashboard = () => {
                     {o.total_price_inr ? ` · ₹${o.total_price_inr.toLocaleString("en-IN")}` : ""}
                   </span>
                 </div>
-                <span className={`status-pill ${o.status === "cancelled" ? "cancelled" : ""}`}>
-                  {STATUS_LABELS[o.status] || o.status}
-                </span>
                 {o.status === "placed" && (
                   <button type="button" className="upload-button" onClick={() => handleCancelOrder(o.id)}>
                     Cancel
                   </button>
                 )}
+                <OrderStatusStepper status={o.status} />
               </div>
             ))}
           </div>
@@ -530,6 +591,10 @@ const BuyerDashboard = () => {
                 By <strong>{selectedProduct.artisan_username}</strong>
               </p>
 
+              <div style={{ margin: "8px 0" }}>
+                <ZeroCommissionBadge />
+              </div>
+
               <strong className="modal-price">
                 {selectedProduct.price_min_inr
                   ? `₹${selectedProduct.price_min_inr}${
@@ -542,10 +607,46 @@ const BuyerDashboard = () => {
 
               {detailError && <p style={{ fontSize: 12, color: "#8d3d36", marginBottom: 10 }}>{detailError}</p>}
 
+              {/* ============ ASK THE ARTISAN (AI Q&A) ============ */}
+              <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1px solid #eee5d8" }}>
+                <p className="result-label" style={{ marginBottom: 8 }}>
+                  ASK THE ARTISAN
+                </p>
+                <form onSubmit={handleAskQuestion} style={{ display: "flex", gap: 8 }}>
+                  <input
+                    type="text"
+                    placeholder="e.g. How long does this take to make?"
+                    value={askQuestion}
+                    onChange={(e) => setAskQuestion(e.target.value)}
+                    className="text-input"
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="submit"
+                    className="upload-button"
+                    disabled={askLoading || !askQuestion.trim()}
+                  >
+                    {askLoading ? "Asking..." : "Ask"}
+                  </button>
+                </form>
+
+                {askError && (
+                  <p style={{ marginTop: 8, fontSize: 12, color: "#b3432b" }}>{askError}</p>
+                )}
+
+                {askAnswer && (
+                  <div className="transcript-box" style={{ marginTop: 10 }}>
+                    <p>{askAnswer}</p>
+                  </div>
+                )}
+              </div>
+
               {placedProductIds.includes(selectedProduct.id) ? (
-                <span className="order-placed-tag">✓ Order placed</span>
+                <span className="order-placed-tag" style={{ marginTop: 16, display: "inline-block" }}>
+                  ✓ Order placed
+                </span>
               ) : (
-                <div className="modal-order-row">
+                <div className="modal-order-row" style={{ marginTop: 16 }}>
                   <input
                     type="number"
                     min="1"

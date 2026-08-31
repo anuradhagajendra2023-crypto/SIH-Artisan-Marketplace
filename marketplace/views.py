@@ -780,3 +780,102 @@ def enhance_image(request):
             {"error": "Image enhancement failed.", "details": str(e)},
             status=500,
         )
+
+
+# ============================================================
+# TRUST BADGE (reference-based verification)
+# ============================================================
+
+from .models import VerificationRequest
+from .serializers import VerificationRequestSerializer
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def verification(request):
+    if request.method == "GET":
+        latest = VerificationRequest.objects.filter(artisan=request.user).first()
+        if latest is None:
+            return Response(None)
+        return Response(VerificationRequestSerializer(latest).data)
+
+    # POST — submit a new verification request
+    photo_data_url = (request.data.get("photo_data_url") or "").strip()
+    reference_name = (request.data.get("reference_name") or "").strip()
+
+    if not photo_data_url:
+        return Response({"error": "Please add a photo first."}, status=400)
+    if not reference_name:
+        return Response({"error": "Please add at least one reference name."}, status=400)
+
+    already_pending = VerificationRequest.objects.filter(
+        artisan=request.user, status=VerificationRequest.Status.PENDING
+    ).exists()
+    if already_pending:
+        return Response(
+            {"error": "You already have a verification request under review."},
+            status=400,
+        )
+
+    vr = VerificationRequest.objects.create(
+        artisan=request.user,
+        photo_data_url=photo_data_url,
+        reference_name=reference_name,
+        reference_phone=(request.data.get("reference_phone") or "").strip(),
+        reference_relation=(request.data.get("reference_relation") or "").strip(),
+        note=(request.data.get("note") or "").strip(),
+    )
+
+    return Response(VerificationRequestSerializer(vr).data, status=201)
+# ============================================================
+# ASK THE ARTISAN (AI Q&A grounded in the product listing)
+# ============================================================
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def ask_product_question(request, product_id):
+    """Buyer-facing Q&A: answers a buyer's free-text question about a
+    specific listing, grounded only in that product's own data (title,
+    description, category, craft_technique, tags). Does not invent facts
+    the listing doesn't contain — tells the buyer to ask the artisan
+    directly for anything it can't answer from the listing.
+    """
+    try:
+        product = Product.objects.get(id=product_id, status=Product.Status.PUBLISHED)
+    except Product.DoesNotExist:
+        return Response({"error": "Product not found."}, status=404)
+
+    question = (request.data.get("question") or "").strip()
+    if not question:
+        return Response({"error": "question is required."}, status=400)
+
+    context = f"""Title: {product.title}
+Category: {product.category}
+Craft technique: {product.craft_technique}
+Description: {product.description}
+Tags: {", ".join(product.tags or [])}
+Price range: ₹{product.price_min_inr or "?"} - ₹{product.price_max_inr or "?"}"""
+
+    prompt = f"""You are a helpful shopping assistant for Kaarigar, a marketplace for Indian artisans. A buyer is asking a question about ONE specific product listing. Answer ONLY using the listing details below — do not invent materials, dimensions, care instructions, or delivery timelines that aren't stated. If the listing doesn't contain enough information to answer confidently, say so plainly and suggest the buyer message the artisan directly for that detail. Keep the answer to 2-3 short sentences, friendly and direct.
+
+LISTING DETAILS:
+{context}
+
+BUYER QUESTION:
+{question}
+
+Respond with plain text only, no markdown, no JSON."""
+
+    try:
+        resp = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent",
+            headers={"Content-Type": "application/json"},
+            params={"key": GEMINI_API_KEY},
+            json={"contents": [{"parts": [{"text": prompt}]}]},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        answer = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+        return Response({"answer": answer})
+    except Exception as e:
+        return Response({"error": f"Could not get an answer right now: {str(e)}"}, status=500)

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.db.models import Sum
 
-from .models import Product, Order, GalleryMedia
+from .models import Product, Order, GalleryMedia, VerificationRequest
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -125,3 +125,20 @@ class GalleryMediaSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "artisan", "artisan_username", "created_at"]
+
+
+class VerificationRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VerificationRequest
+        fields = [
+            "id",
+            "status",
+            "reference_name",
+            "reference_phone",
+            "reference_relation",
+            "note",
+            "admin_note",
+            "submitted_at",
+            "reviewed_at",
+        ]
+        read_only_fields = ["id", "status", "admin_note", "submitted_at", "reviewed_at"]
